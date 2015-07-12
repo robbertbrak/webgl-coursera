@@ -10,6 +10,7 @@ var program;
 var vertices = [];
 var colors = [];
 var color = "random";
+var mode = "outline";
 
 // The shape is an array of triangles.
 var shape = [];
@@ -19,6 +20,8 @@ window.onload = function init() {
     angle = document.getElementById("angle").value;
     twist = document.getElementById("twist").value;
     depth = document.getElementById("tesselation").value;
+    color = document.getElementById("color").value;
+    mode = document.getElementById("mode").value;
 
     gl = WebGLUtils.setupWebGL(canvas);
     if (!gl) { alert("WebGL isn't available"); }
@@ -55,7 +58,11 @@ function drawShape() {
     gl.enableVertexAttribArray(vPosition);
 
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.drawArrays(gl.TRIANGLES, 0, vertices.length);
+    if (mode === 'outline') {
+        gl.drawArrays(gl.LINES, 0, vertices.length);
+    } else {
+        gl.drawArrays(gl.TRIANGLES, 0, vertices.length);
+    }
 }
 
 function setShape(val) {
@@ -124,6 +131,12 @@ function setTesselation(val) {
     drawShape();
 }
 
+function setMode(val) {
+    mode = val;
+    createShapes();
+    drawShape();
+}
+
 function getColor() {
     if (color === 'random') {
         return vec3(Math.random(), Math.random(), Math.random())
@@ -146,7 +159,12 @@ function createShapes() {
         if (depth == 0) {
             var color = getColor();
             colors.push(color, color, color);
-            vertices.push(a, b, c);
+            if (mode === 'outline') {
+                colors.push(color, color, color);
+                vertices.push(a, b, b, c, c, a);
+            } else {
+                vertices.push(a, b, c);
+            }
         } else {
             var ab = mix(a, b, 0.5);
             var ac = mix(a, c, 0.5);
