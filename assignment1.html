@@ -8,12 +8,15 @@ attribute vec3 vColor;
 varying vec4 color;
 
 void main() {
-  float d = sqrt(vPosition.x * vPosition.x + vPosition.y * vPosition.y);
+  float x = vPosition.x;
+  float y = vPosition.y;
+  float twist = properties.x;
   float angle = properties.y;
-  // vec4 pos = vec4(vPosition.x * cos(d * properties.y) - vPosition.y * sin(d * properties.y), 
-  //   vPosition.x * sin(d * properties.y) + vPosition.y * cos(d * properties.y), 0.0, 1.0);
-  vec4 pos = vec4(vPosition.x * cos(d * angle) - vPosition.y * sin(d * angle), 
-    vPosition.x * sin(d * angle) + vPosition.y * cos(d * angle), 0.0, 1.0);
+  float d = sqrt(x * x + y * y);
+  float cosTheta = cos(angle);
+  float sinTheta = sin(angle);
+  vec4 pos = vec4(x * cosTheta - y * sinTheta, x * sinTheta + y * cosTheta, 0.0, 1.0);
+  pos = vec4(pos.x * cos(d * twist) - pos.y * sin(d * twist), pos.x * sin(d * twist) + pos.y * cos(d * twist), 0.0, 1.0);
         
   gl_Position = pos;
   color = vec4(vColor, 1.0);
@@ -35,28 +38,34 @@ void main() {
 <script type="text/javascript" src="common/MV.js"></script>
 <script type="text/javascript" src="assignment1.js"></script>
 <style type="text/css">
-  label { display: block; clear: both; width: 250px; }
+  html, body { margin: 0; padding: 0; background-color: rgb(45, 45, 45); color: white; font-family: Arial, sans-serif; }
+  label { display: block; clear: both; width: 350px; }
   .label { float: left; }
   input { float: right; vertical-align: middle; }
+  .slider { width: 250px; }
+  form { float: left; padding: 10px; }
+  canvas { float: left; padding: 10px; }
 </style>
 </head>
 
 <body>
-<div>
 <form>
-<label for="angle"><span class="label">Angle</span>
-  <input type="range" id="angle"
-      min="0" max="6.0" step="0.01" value="0"
+<label for="angle"><span class="label">Rotation</span>
+  <input type="range" class="slider" id="angle"
+      min="0" max="360" step="0.1" value="0"
       onchange="changeAngle(this.value)" oninput="changeAngle(this.value)">
 </label>
+<label for="twist"><span class="label">Twist</span>
+  <input type="range" class="slider" id="twist"
+      min="0" max="5.0" step="0.01" value="0"
+      onchange="changeTwist(this.value)" oninput="changeTwist(this.value)">
+</label>
 <label for="tesselation"><span class="label">Tesselation</span>
-  <input type="range" id="tesselation"
-      min="0" max="9" step="1" value="5"
+  <input type="range" class="slider" id="tesselation"
+      min="0" max="9" step="1" value="6"
       onchange="changeTesselation(this.value)" oninput="changeTesselation(this.value)" list="tesselation-list">
 </label>
 </form>
-<br>
-</div>
 
 <datalist id="tesselation-list">
   <option>0</option>
@@ -72,7 +81,7 @@ void main() {
 </datalist>
 
 </div>
-<canvas id="gl-canvas" width="900" height="900">
+<canvas id="gl-canvas" width="800" height="800">
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 </body>

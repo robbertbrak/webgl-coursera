@@ -4,6 +4,7 @@ var gl;
 var points;
 
 var angle = 0;
+var twist = 0;
 var depth = 5;
 var program;
 var vertices = [];
@@ -16,13 +17,16 @@ var c = vec2(size * Math.cos(Math.PI / 6), - 0.5 * size);
 
 window.onload = function init() {
     var canvas = document.getElementById("gl-canvas");
+    angle = document.getElementById("angle").value;
+    twist = document.getElementById("twist").value;
+    depth = document.getElementById("tesselation").value;
 
     gl = WebGLUtils.setupWebGL(canvas);
     if (!gl) { alert("WebGL isn't available"); }
 
     gl.viewport(0, 0, canvas.width, canvas.height);
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearColor(45 / 255.0, 45 / 255.0, 45 / 255.0, 1.0);
 
     program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
@@ -33,7 +37,7 @@ window.onload = function init() {
 
 function drawTriangle() {
     var properties = gl.getAttribLocation(program, 'properties');
-    gl.vertexAttrib3f(properties, 1.0, angle, 0.0);
+    gl.vertexAttrib3f(properties, twist, angle, 0.0);
 
     var cBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
@@ -60,7 +64,12 @@ function render(size) {
 }
 
 function changeAngle(val) {
-    angle = val;
+    angle = (val * Math.PI * 2) / 360;
+    drawTriangle();
+}
+
+function changeTwist(val) {
+    twist = val;
     drawTriangle();
 }
 
