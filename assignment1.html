@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+attribute vec4 properties;
+attribute vec3 vColor;
+varying vec4 color;
+
+void main() {
+  float d = sqrt(vPosition.x * vPosition.x + vPosition.y * vPosition.y);
+  float angle = properties.y;
+  // vec4 pos = vec4(vPosition.x * cos(d * properties.y) - vPosition.y * sin(d * properties.y), 
+  //   vPosition.x * sin(d * properties.y) + vPosition.y * cos(d * properties.y), 0.0, 1.0);
+  vec4 pos = vec4(vPosition.x * cos(d * angle) - vPosition.y * sin(d * angle), 
+    vPosition.x * sin(d * angle) + vPosition.y * cos(d * angle), 0.0, 1.0);
+        
+  gl_Position = pos;
+  color = vec4(vColor, 1.0);
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec4 color;
+
+void main() {
+  gl_FragColor = color;
+}
+</script>
+
+<script type="text/javascript" src="common/webgl-utils.js"></script>
+<script type="text/javascript" src="common/initShaders.js"></script>
+<script type="text/javascript" src="common/MV.js"></script>
+<script type="text/javascript" src="assignment1.js"></script>
+<style type="text/css">
+  label { display: block; clear: both; width: 250px; }
+  .label { float: left; }
+  input { float: right; vertical-align: middle; }
+</style>
+</head>
+
+<body>
+<div>
+<form>
+<label for="angle"><span class="label">Angle</span>
+  <input type="range" id="angle"
+      min="0" max="6.0" step="0.01" value="0"
+      onchange="changeAngle(this.value)" oninput="changeAngle(this.value)">
+</label>
+<label for="tesselation"><span class="label">Tesselation</span>
+  <input type="range" id="tesselation"
+      min="0" max="9" step="1" value="5"
+      onchange="changeTesselation(this.value)" oninput="changeTesselation(this.value)" list="tesselation-list">
+</label>
+</form>
+<br>
+</div>
+
+<datalist id="tesselation-list">
+  <option>0</option>
+  <option>1</option>
+  <option>2</option>
+  <option>3</option>
+  <option>4</option>
+  <option>5</option>
+  <option>6</option>
+  <option>7</option>
+  <option>8</option>
+  <option>9</option>
+</datalist>
+
+</div>
+<canvas id="gl-canvas" width="900" height="900">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+</body>
+</html>
