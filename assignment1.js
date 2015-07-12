@@ -10,10 +10,8 @@ var program;
 var vertices = [];
 var colors = [];
 
-var size = 1;
-var a = vec2(- size * Math.cos(Math.PI / 6), - 0.5 * size);
-var b = vec2(0, size);
-var c = vec2(size * Math.cos(Math.PI / 6), - 0.5 * size);
+// The shape is an array of triangles.
+var shape = [];
 
 window.onload = function init() {
     var canvas = document.getElementById("gl-canvas");
@@ -31,11 +29,10 @@ window.onload = function init() {
     program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
-    changeTesselation(depth);
-    drawTriangle();
+    changeShape(document.getElementById("shape").value);
 };
 
-function drawTriangle() {
+function drawShape() {
     var properties = gl.getAttribLocation(program, 'properties');
     gl.vertexAttrib3f(properties, twist, angle, 0.0);
 
@@ -55,22 +52,57 @@ function drawTriangle() {
     gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vPosition);
 
-    render(vertices.length);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES, 0, vertices.length);
 }
 
-function render(size) {
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.drawArrays(gl.TRIANGLES, 0, size);
+function changeShape(val) {
+    var deg30 = Math.PI / 6;
+    var cos30 = Math.cos(deg30);
+    shape = [];
+
+    if (val === 'triangle') {
+        shape.push([vec2(- cos30, - 0.5), vec2(0, 1), vec2(cos30, - 0.5)]);
+    } else if (val === 'diamond') {
+        shape.push([vec2(- 0.5, 0), vec2(0,   cos30), vec2(0.5, 0)]);
+        shape.push([vec2(- 0.5, 0), vec2(0, - cos30), vec2(0.5, 0)]);
+    } else if (val === 'radioactive') {
+        var width = 0.5;
+        var height = 2 * width * cos30;
+
+        shape.push([vec2(- 2 * width, 0), vec2(- width, height), vec2(0, 0)]);
+        shape.push([vec2(width, -height), vec2(- width, - height), vec2(0, 0)]);
+        shape.push([vec2(2 * width, 0), vec2(width, height), vec2(0, 0)]);
+    } else if (val === 'star') {
+        var width = 0.25;
+        var height = 2 * width * cos30;
+        // Outline
+        shape.push([vec2(- 3 * width, height), vec2(- width, height), vec2(-2 * width, 0)]);
+        shape.push([vec2(- width, height), vec2(0, 2 * height), vec2(width, height)]);
+        shape.push([vec2(width, height), vec2(3 * width, height), vec2(2 * width, 0)]);
+        shape.push([vec2(- 3 * width, - height), vec2(- width, - height), vec2(- 2 * width, 0)]);
+        shape.push([vec2(- width, - height), vec2(0, -2 * height), vec2(width, - height)]);
+        shape.push([vec2(width, - height), vec2(3 * width, - height), vec2(2 * width, 0)]);
+
+        // Hexagon in the center
+        shape.push([vec2(- 2 * width, 0), vec2(- width, height), vec2(0, 0)]);
+        shape.push([vec2(- 2 * width, 0), vec2(- width, - height), vec2(0, 0)]);
+        shape.push([vec2(width, -height), vec2(- width, - height), vec2(0, 0)]);
+        shape.push([vec2(width, height), vec2(- width, height), vec2(0, 0)]);
+        shape.push([vec2(2 * width, 0), vec2(width, height), vec2(0, 0)]);
+        shape.push([vec2(2 * width, 0), vec2(width, - height), vec2(0, 0)]);
+    }
+    changeTesselation(depth);
 }
 
 function changeAngle(val) {
     angle = (val * Math.PI * 2) / 360;
-    drawTriangle();
+    drawShape();
 }
 
 function changeTwist(val) {
     twist = val;
-    drawTriangle();
+    drawShape();
 }
 
 function changeTesselation(val) {
@@ -79,23 +111,11 @@ function changeTesselation(val) {
     vertices = [];
     colors = [];
 
-    function rotateAndTwist(point) {
-        var x = point[0];
-        var y = point[1];
-        // var d = Math.sqrt(x * x + y * y);
-        // var cos = Math.cos(angle);
-        // var sin = Math.sin(angle);
-        // return vec2(x * cos - y * sin, x * sin + y * cos);
-        return vec2(x, y);
-    }
-
     function divideTriangles(a, b, c, depth) {
         if (depth == 0) {
             var color =vec3(Math.random(), Math.random(), Math.random());
             colors.push(color, color, color);
-            vertices.push(rotateAndTwist(a), 
-                rotateAndTwist(b),
-                rotateAndTwist(c));
+            vertices.push(a, b, c);
         } else {
             var ab = mix(a, b, 0.5);
             var ac = mix(a, c, 0.5);
@@ -107,7 +127,10 @@ function changeTesselation(val) {
         }
     }
 
-    divideTriangles(a, b, c, depth);
+    for (var i = 0; i < shape.length; i++) {
+        var triangle = shape[i];
+        divideTriangles(triangle[0], triangle[1], triangle[2], depth);
+    };
 
-    drawTriangle();
+    drawShape();
 }
