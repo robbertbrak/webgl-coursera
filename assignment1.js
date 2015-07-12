@@ -11,6 +11,7 @@ var vertices = [];
 var colors = [];
 var color = "random";
 var mode = "outline";
+var fractal = true;
 
 // The shape is an array of triangles.
 var shape = [];
@@ -22,6 +23,7 @@ window.onload = function init() {
     depth = document.getElementById("tesselation").value;
     color = document.getElementById("color").value;
     mode = document.getElementById("mode").value;
+    fractal = document.getElementById("fractal").checked;
 
     gl = WebGLUtils.setupWebGL(canvas);
     if (!gl) { alert("WebGL isn't available"); }
@@ -137,6 +139,12 @@ function setMode(val) {
     drawShape();
 }
 
+function setFractal(val) {
+    fractal = val;
+    createShapes();
+    drawShape();
+}
+
 function getColor() {
     if (color === 'random') {
         return vec3(Math.random(), Math.random(), Math.random())
@@ -171,7 +179,9 @@ function createShapes() {
             var bc = mix(b, c, 0.5);
             divideTriangles(a, ab, ac, depth - 1);
             divideTriangles(ab, b, bc, depth - 1);
-            divideTriangles(ab, bc, ac, depth - 1);
+            if (!fractal) {
+                divideTriangles(ab, bc, ac, depth - 1);
+            }
             divideTriangles(ac, bc, c, depth - 1);
         }
     }
