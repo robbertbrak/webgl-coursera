@@ -9,6 +9,7 @@ var depth = 5;
 var program;
 var vertices = [];
 var colors = [];
+var color = "random";
 
 // The shape is an array of triangles.
 var shape = [];
@@ -24,12 +25,13 @@ window.onload = function init() {
 
     gl.viewport(0, 0, canvas.width, canvas.height);
 
-    gl.clearColor(45 / 255.0, 45 / 255.0, 45 / 255.0, 1.0);
+    var gray = 45 / 255.0;
+    gl.clearColor(gray, gray, gray, 1.0);
 
     program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
-    changeShape(document.getElementById("shape").value);
+    setShape(document.getElementById("shape").value);
 };
 
 function drawShape() {
@@ -56,16 +58,19 @@ function drawShape() {
     gl.drawArrays(gl.TRIANGLES, 0, vertices.length);
 }
 
-function changeShape(val) {
-    var deg30 = Math.PI / 6;
-    var cos30 = Math.cos(deg30);
+function setShape(val) {
     shape = [];
+
+    var cos30 = Math.cos(Math.PI / 6);
 
     if (val === 'triangle') {
         shape.push([vec2(- cos30, - 0.5), vec2(0, 1), vec2(cos30, - 0.5)]);
     } else if (val === 'diamond') {
-        shape.push([vec2(- 0.5, 0), vec2(0,   cos30), vec2(0.5, 0)]);
-        shape.push([vec2(- 0.5, 0), vec2(0, - cos30), vec2(0.5, 0)]);
+        var width = 0.5;
+        var height = 2 * width * cos30;
+
+        shape.push([vec2(- width, 0), vec2(0, height), vec2(width, 0)]);
+        shape.push([vec2(- width, 0), vec2(0, - height), vec2(width, 0)]);
     } else if (val === 'radioactive') {
         var width = 0.5;
         var height = 2 * width * cos30;
@@ -92,28 +97,54 @@ function changeShape(val) {
         shape.push([vec2(2 * width, 0), vec2(width, height), vec2(0, 0)]);
         shape.push([vec2(2 * width, 0), vec2(width, - height), vec2(0, 0)]);
     }
-    changeTesselation(depth);
+
+    createShapes();
+    drawShape();
 }
 
-function changeAngle(val) {
+function setAngle(val) {
     angle = (val * Math.PI * 2) / 360;
     drawShape();
 }
 
-function changeTwist(val) {
+function setTwist(val) {
     twist = val;
     drawShape();
 }
 
-function changeTesselation(val) {
-    depth = val;
+function setColor(val) {
+    color = val;
+    createShapes();
+    drawShape();
+}
 
+function setTesselation(val) {
+    depth = val;
+    createShapes();
+    drawShape();
+}
+
+function getColor() {
+    if (color === 'random') {
+        return vec3(Math.random(), Math.random(), Math.random())
+    } else if (color === 'red') {
+        return vec3(1.0, 0, 0);
+    } else if (color === 'green') {
+        return vec3(0, 1.0, 0);
+    } else if (color === 'blue') {
+        return vec3(0, 0, 1.0);
+    } else {
+        return vec3(1.0, 1.0, 1.0);
+    }
+}
+
+function createShapes() {
     vertices = [];
     colors = [];
 
     function divideTriangles(a, b, c, depth) {
         if (depth == 0) {
-            var color =vec3(Math.random(), Math.random(), Math.random());
+            var color = getColor();
             colors.push(color, color, color);
             vertices.push(a, b, c);
         } else {
@@ -131,6 +162,4 @@ function changeTesselation(val) {
         var triangle = shape[i];
         divideTriangles(triangle[0], triangle[1], triangle[2], depth);
     };
-
-    drawShape();
 }

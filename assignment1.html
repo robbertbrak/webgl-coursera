@@ -54,29 +54,39 @@ void main() {
   <label for="angle">Rotation</label>
   <input type="range" class="slider" id="angle"
       min="0" max="360" step="0.1" value="0"
-      onchange="changeAngle(this.value)" oninput="changeAngle(this.value)">
+      onchange="setAngle(this.value)" oninput="setAngle(this.value)">
 </div>
 <div class="form-group">
   <label for="twist">Twist</label>
   <input type="range" class="slider" id="twist"
       min="0" max="5.0" step="0.01" value="0"
-      onchange="changeTwist(this.value)" oninput="changeTwist(this.value)">
+      onchange="setTwist(this.value)" oninput="setTwist(this.value)">
 </div>
 <div class="form-group">
   <label for="tesselation">Tesselation</label>
   <input type="range" class="slider" id="tesselation"
       min="0" max="9" step="1" value="6"
-      onchange="changeTesselation(this.value)" oninput="changeTesselation(this.value)" list="tesselation-list">
+      onchange="setTesselation(this.value)" oninput="setTesselation(this.value)" list="tesselation-list">
 </div>
 <div class="form-group">
   <label for="shape">Shape</label>
-  <select id="shape" onchange="changeShape(this.value)">
+  <select id="shape" onchange="setShape(this.value)">
     <option value="triangle" selected="selected">Triangle</option>
     <option value="diamond">Diamond</option>
     <option value="radioactive">Radioactive</option>
     <option value="star">Star</option>
   </select>
 </div>
+<div class="form-group">
+  <label for="color">Color</label>
+  <select id="color" onchange="setColor(this.value)">
+    <option value="random" selected="selected">Random</option>
+    <option value="red">Red</option>
+    <option value="green">Green</option>
+    <option value="blue">Blue</option>
+  </select>
+</div>
+
 </form>
 
 <datalist id="tesselation-list">
