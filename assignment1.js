@@ -80,6 +80,11 @@ function setShape(val) {
 
         shape.push([vec2(- width, 0), vec2(0, height), vec2(width, 0)]);
         shape.push([vec2(- width, 0), vec2(0, - height), vec2(width, 0)]);
+    } else if (val === 'square') {
+        var width = 0.5;
+
+        shape.push([vec2(-width, -width), vec2(-width, width), vec2(width, width)]);
+        shape.push([vec2(-width, -width), vec2(width, -width), vec2(width, width)]);
     } else if (val === 'radioactive') {
         var width = 0.5;
         var height = 2 * width * cos30;
