@@ -35,7 +35,7 @@ void main() {
   .slider { width: 300px; }
   .form { float: left; padding: 10px; }
   canvas { float: left; margin: 0; padding: 0; cursor: crosshair; }
-  #color-display { display: inline-block; width: 300px; vertical-align: middle; }
+  #line-appearance { display: inline-block; width: 300px; vertical-align: middle; }
 </style>
 </head>
 
@@ -44,6 +44,10 @@ void main() {
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 <div class="form">
+  <div class="form-group">
+    <label for="straight-lines">Straight lines</label>
+    <input type="checkbox" id="straight-lines">
+  </div>
   <div class="form-group">
     <label for="thickness">Thickness</label>
     <input type="range" class="slider" id="thickness" min="0.002" max="0.05" step="0.001" value="0.005">
@@ -61,8 +65,8 @@ Oops ... your browser doesn't support the HTML5 canvas element
     <input type="range" class="slider" id="blue" min="0" max="255" step="1" value="0">
   </div>
   <div class="form-group">
-    <label for="color-display">Appearance</label>
-    <div id="color-display">&nbsp;</div>
+    <label for="line-appearance">Appearance</label>
+    <div id="line-appearance">&nbsp;</div>
   </div>
   <div class="form-group">
     <label for="clear-canvas"></label>

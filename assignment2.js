@@ -7,14 +7,14 @@ window.onload = function init() {
     var mousedown = false;
     var strips = [];
     var strip = [];
-    var red, green, blue = 0;
     
     var canvas = document.getElementById("gl-canvas");
     var thickness = document.getElementById("thickness").value;
-    red = document.getElementById("red").value;
-    green = document.getElementById("green").value;
-    blue = document.getElementById("blue").value;
-    setColorDisplay();
+    var red = document.getElementById("red").value;
+    var green = document.getElementById("green").value;
+    var blue = document.getElementById("blue").value;
+    var straight = document.getElementById("straight-lines").checked;
+    updateLineAppearance();
 
     gl = WebGLUtils.setupWebGL(canvas);
     if (!gl) { alert("WebGL isn't available"); }
@@ -50,9 +50,16 @@ window.onload = function init() {
     function addPoint(event) {
         var point = coord(event);
         var color = getColor();
+
+        if (straight) {
+            if (strip.length == 2) {
+                strip.pop();
+                index -= 4;
+            }
+        }
+
         strip.push(point);
         if (strip.length >= 2) {
-            // Als dit het tweede punt is, berekenen we de eerste 2 driehoeken.
             var first = strip[strip.length - 2];
             var normal = normalvec2(point, first);
             if (strip.length == 2) {
@@ -84,7 +91,6 @@ window.onload = function init() {
     function coord(event) {
         // TODO: werkt alleen als canvas helemaal linksboven staat.
         var rect = canvas.getBoundingClientRect();
-        console.log("x: " + event.screenX + " y: " + event.screenX);
         return vec2(2 * (event.clientX - rect.left) / canvas.width - 1, 
                     2 * (canvas.height - (event.clientY - rect.top)) / canvas.height - 1);
     }
@@ -93,9 +99,9 @@ window.onload = function init() {
         return flatten(vec4(red / 255.0, green / 255.0, blue / 255.0, 1.0));
     }
 
-    function setColorDisplay() {
-        document.getElementById("color-display").style.backgroundColor = "rgb(" + red + "," + green + "," + blue + ")";
-        document.getElementById("color-display").style.height = (thickness * canvas.width) + "px";
+    function updateLineAppearance() {
+        document.getElementById("line-appearance").style.backgroundColor = "rgb(" + red + "," + green + "," + blue + ")";
+        document.getElementById("line-appearance").style.height = (thickness * canvas.width) + "px";
     }
 
     function render() {
@@ -121,6 +127,9 @@ window.onload = function init() {
 
     canvas.addEventListener("mouseup", function() { 
         mousedown = false;
+        if (straight) {
+            addPoint(event);
+        }
     });
 
     canvas.addEventListener("mousemove", function(event) {
@@ -136,19 +145,23 @@ window.onload = function init() {
 
     document.getElementById("thickness").addEventListener("input", function(event) {
         thickness = event.target.value;
-        setColorDisplay();
+        updateLineAppearance();
     });
     
     document.getElementById("red").addEventListener("input", function(event) {
         red = event.target.value;
-        setColorDisplay();
+        updateLineAppearance();
     });
     document.getElementById("green").addEventListener("input", function(event) { 
         green = event.target.value;
-        setColorDisplay();
+        updateLineAppearance();
     });
     document.getElementById("blue").addEventListener("input", function(event) { 
         blue = event.target.value;
-        setColorDisplay();
+        updateLineAppearance();
+    });
+
+    document.getElementById("straight-lines").addEventListener("change", function(event) {
+        straight = event.target.checked;
     });
 }
