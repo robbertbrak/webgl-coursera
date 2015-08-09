@@ -16,13 +16,15 @@ var modeViewMatrix;
 var modelViewMatrixLoc;
 
 var shapes = [];
-var currentScale = 0.1;
+var currentScale = 0.5;
 var currentShape = 0;
 var currentObject = {};
 var surfaceColor = vec4(0.1, 0.6, 0.0, 1.0);
 var lineColor = vec4(0.0, 1.0, 0.0, 1.0);
 var currentRotation = [45, 145, 45];
 var currentPosition = [0, 0, 0];
+var cameraAngle = 0;
+var eye = [0, 0, 12];
 
 var mousedown = false;
 
@@ -79,7 +81,7 @@ function initEventListeners() {
             shape: shapes[currentShape],
             rotation: getRotationMatrix(),
             scale: scale(currentScale, currentScale, currentScale),
-            translation: translate(0, 0, 0),
+            translation: getTranslationMatrix(),
             lineColor: lineColor,
             surfaceColor: surfaceColor
         };
@@ -93,6 +95,12 @@ function initEventListeners() {
         var depth = $(this).val();
         currentPosition[2] = depth;
         currentObject.translation = getTranslationMatrix();
+    });
+    $("#camera-angle").on("input", function() {
+        cameraAngle = $(this).val();
+        var rotationMatrix = mult(scale(12, 12, 12), rotateY(cameraAngle));
+        eye = vec3(rotationMatrix[2][0], rotationMatrix[2][1], rotationMatrix[2][2]);
+        console.log(eye);
     });
     $("#rotate-x").on("input", function() {
         currentRotation[0] = $(this).val();
@@ -148,11 +156,15 @@ function getTranslationMatrix() {
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+
     for (var i = 0; i < objects.length; i++) {
         var object = objects[i];
 
         // Set transformation matrix for current object
         var modelViewMatrix = mult(object.translation, mult(object.scale, object.rotation));
+
+        modelViewMatrix = mult(lookAt(eye, [0, 0, 0], [0, 1, 0]), modelViewMatrix);
+        modelViewMatrix = mult(perspective(20, canvas.clientWidth / canvas.clientHeight, 1, 24), modelViewMatrix);
         gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
 
         for (var j = 0; j < objects[i].shape.buffers.length; j++) {
