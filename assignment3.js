@@ -4,27 +4,6 @@ var canvas;
 var gl;
 var program;
 
-var points = [];
-var colors = [];
-
-var fans = [];
-var strips = [];
-var fanbuffers = [];
-var stripbuffers = [];
-
-var xAxis = 0;
-var yAxis = 1;
-var zAxis = 2;
-
-var axis = 0;
-var theta = [ 8.0, 16.0, 0 ];
-
-var thetaLoc;
-
-var linecolor = [1.0, 0.0, 0.0, 1.0];
-var surfacecolor = [0.4, 0.0, 0.0, 1.0];
-var surfacecolor2 = [0.6, 0.0, 0.0, 1.0];
-
 var fColor;
 var animate = false;
 
@@ -33,34 +12,16 @@ var OUTLINE = 2;
 
 var objects = [];
 
+var modeViewMatrix;
+var modelViewMatrixLoc;
+
 window.onload = function init() {
-    canvas = document.getElementById("gl-canvas");
-
-    gl = WebGLUtils.setupWebGL(canvas);
-    if (!gl) {
-        alert("WebGL isn't available");
-        return;
-    }
-
-    gl.viewport(0, 0, canvas.width, canvas.height);
-
-    var gray = 45 / 255.0;
-    gl.clearColor(gray, gray, gray, 1.0);
-
-    gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.POLYGON_OFFSET_FILL);
-    gl.polygonOffset(0.2, 0);
-
-    //
-    //  Load shaders and initialize attribute buffers
-    //
-    program = initShaders(gl, "vertex-shader", "fragment-shader");
-    gl.useProgram(program);
+    initGlProgram();
 
     fColor = gl.getUniformLocation(program, "fColor");
-    thetaLoc = gl.getUniformLocation(program, "theta");
+    modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
 
-    // Create various shapes.
+    // First we create various shapes.
     // Each shape is just an array of buffer objects, each of which has:
     // - an array of vertices 
     // - a color
@@ -68,54 +29,56 @@ window.onload = function init() {
     var sphere = createSphere();
     var cylinder = createCylinder();
     var cone = createCone();
-    // var cube = createCube();
+    var cube = createCube();
 
-    objects.push({ shape: cone });
+    // Now we create object instances by associating a shape with a transformation and color.
+    objects.push({ 
+        shape: cone,
+        mvMatrix: mult(translate(-0.5, 0.5, 0), mult(scale(0.3, 0.3, 0.3), rotate(45, vec3(0.5, 0.5, 0.5)))),
+        lineColor: vec4(1.0, 0.0, 0.0, 1.0),
+        surfaceColor: vec4(0.6, 0.0, 0.0, 1.0)
+    });
+    objects.push({ 
+        shape: sphere,
+        mvMatrix: mult(translate(0.5, 0, 0), mult(scale(0.1, 0.1, 0.1), rotate(90, vec3(0.5, 0.5, 0.5)))),
+        lineColor: vec4(0.0, 1.0, 0.0, 1.0),
+        surfaceColor: vec4(0.1, 0.6, 0.0, 1.0)
+    });
+    objects.push({
+        shape: cube,
+        mvMatrix: mult(translate(0, -0.2, 0), mult(scale(0.2, 0.2, 0.2), rotate(30, vec3(-0.5, 0.5, 0.5)))),
+        lineColor: vec4(0, 0.6, 0.6, 1.0),
+        surfaceColor: vec4(0, 0.3, 0.3, 1.0)
+    });
+    objects.push({
+        shape: cylinder,
+        mvMatrix: mult(translate(-0.5, -0.5, 0), mult(scale(0.2, 0.2, 0.2), rotate(30, vec3(-0.5, 0.5, 0.5)))),
+        lineColor: vec4(0.6, 0.6, 0.6, 1.0),
+        surfaceColor: vec4(0.3, 0.3, 0.3, 1.0)
+    });
 
-    // Now we create object instances by associating them with a transformation.
-    // Finally we start the rendering loop, which just loops over the object instances
-    // and renders them.
-
-    //event listeners for buttons
-
-    document.getElementById("xButton").onclick = function() {
-        axis = xAxis;
-        if (!animate) render();
-    };
-    document.getElementById("yButton").onclick = function() {
-        axis = yAxis;
-        if (!animate) render();
-    };
-    document.getElementById("zButton").onclick = function() {
-        axis = zAxis;
-        if (!animate) render();
-    };
-    document.getElementById("animate").onclick = function() {
-        animate = !animate;
-        if (animate) render();
-    };
-
+    // Finally we start the rendering loop, which just loops over the object instances and renders them.
     render();
 }
 
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    theta[axis] += 2.0;
-    gl.uniform3fv(thetaLoc, theta);
-
     for (var i = 0; i < objects.length; i++) {
+        var modelViewMatrix = objects[i].mvMatrix;
+        gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
         for (var j = 0; j < objects[i].shape.buffers.length; j++) {
-            var bufferInfo = objects[i].shape.buffers[j];
+            var object = objects[i];
+            var bufferInfo = object.shape.buffers[j];
             gl.bindBuffer(gl.ARRAY_BUFFER, bufferInfo.buffer);
             var vPosition = gl.getAttribLocation(program, "vPosition");
             gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(vPosition);
 
             if (bufferInfo.fillmode == OUTLINE) {
-                gl.uniform4fv(fColor, flatten(linecolor));
+                gl.uniform4fv(fColor, flatten(object.lineColor));
             } else if (bufferInfo.fillmode == SURFACE) {
-                gl.uniform4fv(fColor, flatten(surfacecolor));
+                gl.uniform4fv(fColor, flatten(object.surfaceColor));
             }
 
             gl.drawArrays(bufferInfo.drawmode, 0, bufferInfo.numVertices);
@@ -155,8 +118,8 @@ function createCone() {
         disc.push(edge);
         cone.push(edge);
         lineloop.push(edge);
-        lines.push(center, edge); // spoke
-        lines.push(top, edge);
+        lines.push(center, edge); // spoke on disc
+        lines.push(top, edge); // spoke on cone
     }
 
     shape.buffers.push(createBuffer(disc, gl.TRIANGLE_FAN, SURFACE));
@@ -236,7 +199,8 @@ function createSphere() {
        vec4(z, x, 0.0, 1.0), vec4(-z, x, 0.0, 1.0), vec4(z, -x, 0.0, 1.0), vec4(-z, -x, 0.0, 1.0) 
     ]
 
-    // A sphere is a icosahedron where each of the triangles is subdivided and the vertices normalized.
+    // A sphere is a icosahedron where each of the triangles is subdivided
+    // and the vertices normalized (so they are pushed outwards towards the sphere surface).
     var points = [];
     triangle(vertices, points, 0, 4, 1);
     triangle(vertices, points, 0, 9, 4);
@@ -281,7 +245,8 @@ function createBuffer(points, drawmode, fillmode) {
 }
 
 function triangle(vertices, points, a, b, c) {
-    divideTriangles(points, vertices[a], vertices[b], vertices[c], 3);
+    var tesselationDepth = 2;
+    divideTriangles(points, vertices[a], vertices[b], vertices[c], tesselationDepth);
 }
 
 function divideTriangles(points, a, b, c, depth) {
@@ -299,52 +264,55 @@ function divideTriangles(points, a, b, c, depth) {
 }
 
 
-function colorCube() {
-    quad( 1, 0, 3, 2 );
-    quad( 2, 3, 7, 6 );
-    quad( 3, 0, 4, 7 );
-    quad( 6, 5, 1, 2 );
-    quad( 4, 5, 6, 7 );
-    quad( 5, 4, 0, 1 );
+function createCube() {
+    var vertices = [
+        vec4(-0.5, -0.5,  0.5, 1.0),
+        vec4(-0.5,  0.5,  0.5, 1.0),
+        vec4( 0.5,  0.5,  0.5, 1.0),
+        vec4( 0.5, -0.5,  0.5, 1.0),
+        vec4(-0.5, -0.5, -0.5, 1.0),
+        vec4(-0.5,  0.5, -0.5, 1.0),
+        vec4( 0.5,  0.5, -0.5, 1.0),
+        vec4( 0.5, -0.5, -0.5, 1.0)
+    ];
+
+    var triangles = [];
+    var lines = [];
+
+    var quads = [[1, 0, 3, 2], [2, 3, 7, 6], [3, 0, 4, 7], [6, 5, 1, 2], [4, 5, 6, 7], [5, 4, 0, 1]];
+    for (var i = 0; i < quads.length; i++) {
+        var quad = quads[i];
+        var indices = [ quad[0], quad[1], quad[2], quad[0], quad[2], quad[3] ];
+        for (var j = 0; j < indices.length; j++) {
+            triangles.push(vertices[indices[j]]);
+        };
+        for (var j = 0; j < quad.length; j++) {
+            lines.push(vertices[quad[j]], vertices[quad[(j+1) % 4]]);
+        };
+    };
+    var shape = { buffers: [] };
+    shape.buffers.push(createBuffer(triangles, gl.TRIANGLES, SURFACE));
+    shape.buffers.push(createBuffer(lines, gl.LINES, OUTLINE));
+    return shape;
 }
 
-function quad(a, b, c, d) {
-    var vertices = [
-        vec4( -0.5, -0.5,  0.5, 1.0 ),
-        vec4( -0.5,  0.5,  0.5, 1.0 ),
-        vec4(  0.5,  0.5,  0.5, 1.0 ),
-        vec4(  0.5, -0.5,  0.5, 1.0 ),
-        vec4( -0.5, -0.5, -0.5, 1.0 ),
-        vec4( -0.5,  0.5, -0.5, 1.0 ),
-        vec4(  0.5,  0.5, -0.5, 1.0 ),
-        vec4(  0.5, -0.5, -0.5, 1.0 )
-    ];
+function initGlProgram() {
+    canvas = document.getElementById("gl-canvas");
 
-    var vertexColors = [
-        [ 0.0, 0.0, 0.0, 1.0 ],  // black
-        [ 1.0, 0.0, 0.0, 1.0 ],  // red
-        [ 1.0, 1.0, 0.0, 1.0 ],  // yellow
-        [ 0.0, 1.0, 0.0, 1.0 ],  // green
-        [ 0.0, 0.0, 1.0, 1.0 ],  // blue
-        [ 1.0, 0.0, 1.0, 1.0 ],  // magenta
-        [ 0.0, 1.0, 1.0, 1.0 ],  // cyan
-        [ 1.0, 1.0, 1.0, 1.0 ]   // white
-    ];
-
-    // We need to parition the quad into two triangles in order for
-    // WebGL to be able to render it.  In this case, we create two
-    // triangles from the quad indices
-
-    //vertex color assigned by the index of the vertex
-
-    var indices = [ a, b, c, a, c, d ];
-
-    for ( var i = 0; i < indices.length; ++i ) {
-        points.push( vertices[indices[i]] );
-        //colors.push( vertexColors[indices[i]] );
-
-        // for solid colored faces use
-        colors.push(vertexColors[a]);
-
+    gl = WebGLUtils.setupWebGL(canvas);
+    if (!gl) {
+        alert("WebGL isn't available");
     }
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
+    var gray = 45 / 255.0;
+    gl.clearColor(gray, gray, gray, 1.0);
+
+    gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.POLYGON_OFFSET_FILL);
+    gl.polygonOffset(0.2, 0);
+
+    program = initShaders(gl, "vertex-shader", "fragment-shader");
+    gl.useProgram(program);
 }
