@@ -1,4 +1,6 @@
+<!DOCTYPE html>
 <html>
+<head>
 
 <script id="vertex-shader" type="x-shader/x-vertex">
 
@@ -7,7 +9,7 @@ attribute  vec4 vPosition;
 uniform mat4 modelViewMatrix;
 
 void main() {
-    gl_Position = modelViewMatrix * vPosition;
+  gl_Position = modelViewMatrix * vPosition;
 }
 
 </script>
@@ -18,26 +20,64 @@ precision mediump float;
 uniform vec4 fColor;
 
 void main() {
-    gl_FragColor = fColor;
+  gl_FragColor = fColor;
 }
 </script>
 
 <script type="text/javascript" src="common/webgl-utils.js"></script>
 <script type="text/javascript" src="common/initShaders.js"></script>
 <script type="text/javascript" src="common/MV.js"></script>
+<script type="text/javascript" src="assignment3-shapes.js"></script>
 <script type="text/javascript" src="assignment3.js"></script>
+<script type="text/javascript" src="common/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="common/spectrum.js"></script>
+<link rel="stylesheet" href="common/spectrum.css" />
+
+<style type="text/css">
+  html, body { margin: 0; padding: 0; background-color: rgb(90, 90, 90); color: white; font-family: Arial, sans-serif; }
+  .form-group {  }
+  label { display: inline-block; width: 100px; vertical-align: middle; line-height: 2.3em; }
+  input, select { display: inline-block; vertical-align: middle; line-height: 2.3em; }
+  .slider { width: 300px; }
+  .form { float: left; padding: 10px; }
+  canvas { float: left; margin: 0; padding: 0; cursor: crosshair; }
+</style>
+</head>
 
 <body>
-<canvas id="gl-canvas" width="512" height="512">
-Oops ... your browser doesn't support the HTML5 canvas element
+<div class="form">
+  <div class="form-group">
+    <label for="shape">Shape</label>
+    <select id="shape">
+      <option value="0" selected="selected">Sphere</option>
+      <option value="1">Cylinder</option>
+      <option value="2">Cone</option>
+      <option value="3">Cube</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="add-shape">&nbsp;</label>
+    <button id="add-shape">Add shape</button>
+  </div>
+  <div class="form-group">
+    <label for="surface-color">Surface color</label>
+    <input type="text" id="surface-color">
+  </div>
+  <div class="form-group">
+    <label for="line-color">Line color</label>
+    <input type="text" id="line-color">
+  </div>
+  <div class="form-group">
+    Click and drag to move an object.<br>
+    Ctrl+Click and drag to rotate the object.
+  </div>
+</div>
+
+<canvas id="gl-canvas" width="800" height="800">
+  Oops ... your browser doesn"t support the HTML5 canvas element
 </canvas>
    
-<br/>
-
-<button id= "xButton">Rotate X</button>
-<button id= "yButton">Rotate Y</button>
-<button id= "zButton">Rotate Z</button>
-<button id= "animate">Toggle animation</button>
-
+<div class="footer">
+Color picker: https://bgrins.github.io/spectrum/
 </body>
 </html>
