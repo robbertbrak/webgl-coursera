@@ -16,10 +16,15 @@ var modeViewMatrix;
 var modelViewMatrixLoc;
 
 var shapes = [];
+var currentScale = 0.1;
 var currentShape = 0;
 var currentObject = {};
 var surfaceColor = vec4(0.1, 0.6, 0.0, 1.0);
 var lineColor = vec4(0.0, 1.0, 0.0, 1.0);
+var currentRotation = [45, 145, 45];
+var currentPosition = [0, 0, 0];
+
+var mousedown = false;
 
 window.onload = function init() {
     initGlProgram();
@@ -41,6 +46,10 @@ function initShapes() {
 }
 
 function initEventListeners() {
+    $("#scale").val(currentScale);
+    $("#rotate-x").val(currentRotation[0]);
+    $("#rotate-y").val(currentRotation[1]);
+    $("#rotate-z").val(currentRotation[2]);
     $("#surface-color").spectrum({
         color: tinycolor.fromRatio({ r: surfaceColor[0], g: surfaceColor[1], b: surfaceColor[2] }),
         showPalette: true,
@@ -61,38 +70,108 @@ function initEventListeners() {
             currentObject.lineColor = lineColor;
         }
     });
-    $("#shape").change(function() { currentShape = $(this).val(); });
+    $("#shape").change(function() { 
+        currentShape = $(this).val(); 
+        currentObject.shape = shapes[currentShape];
+    });
     $("#add-shape").click(function() {
         currentObject = {
             shape: shapes[currentShape],
-            mvMatrix: mult(scale(0.1, 0.1, 0.1), rotate(90, vec3(0.5, 0.5, 0.5))),
+            rotation: getRotationMatrix(),
+            scale: scale(currentScale, currentScale, currentScale),
+            translation: translate(0, 0, 0),
             lineColor: lineColor,
             surfaceColor: surfaceColor
         };
         objects.push(currentObject);
     });
+    $("#scale").on("input", function() {
+        currentScale = $(this).val();
+        currentObject.scale = scale(currentScale, currentScale, currentScale);
+    });
+    $("#z-depth").on("input", function() {
+        var depth = $(this).val();
+        currentPosition[2] = depth;
+        currentObject.translation = getTranslationMatrix();
+    });
+    $("#rotate-x").on("input", function() {
+        currentRotation[0] = $(this).val();
+        currentObject.rotation = getRotationMatrix();
+    });
+    $("#rotate-y").on("input", function() {
+        currentRotation[1] = $(this).val();
+        currentObject.rotation = getRotationMatrix();
+    });
+    $("#rotate-z").on("input", function() {
+        currentRotation[2] = $(this).val();
+        currentObject.rotation = getRotationMatrix();
+    });
+    $("#gl-canvas").mousedown(function(event) { 
+        if(!event.ctrlKey) {
+            moveObject(event);
+        }
+    });
+    $("#gl-canvas").mousemove(function(event) { 
+        if (event.which == 1 || event.buttons == 1) {
+            if (!event.ctrlKey) {
+                moveObject(event);
+            } else {
+                rotateObject(event);
+            }
+        } 
+    });
+
+}
+
+function moveObject(mouseEvent) {
+    var c = coord(mouseEvent);
+    currentPosition[0] = c[0];
+    currentPosition[1] = c[1];
+    currentObject.translation = getTranslationMatrix();
+}
+
+function rotateObject(mouseEvent) {
+    var c = coord(mouseEvent);
+    currentRotation[0] = 360 * (- c[1] + 1) / 2;
+    currentRotation[1] = 360 * (- c[0] + 1) / 2;
+    currentObject.rotation = getRotationMatrix();
+}
+
+function getRotationMatrix() {
+    return mult(mult(rotateX(currentRotation[0]), rotateY(currentRotation[1])), rotateZ(currentRotation[2]));
+}
+
+function getTranslationMatrix() {
+    return translate(currentPosition[0], currentPosition[1], currentPosition[2]);
 }
 
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     for (var i = 0; i < objects.length; i++) {
-        var modelViewMatrix = objects[i].mvMatrix;
+        var object = objects[i];
+
+        // Set transformation matrix for current object
+        var modelViewMatrix = mult(object.translation, mult(object.scale, object.rotation));
         gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
+
         for (var j = 0; j < objects[i].shape.buffers.length; j++) {
-            var object = objects[i];
+
+            // Set current buffer
             var bufferInfo = object.shape.buffers[j];
             gl.bindBuffer(gl.ARRAY_BUFFER, bufferInfo.buffer);
             var vPosition = gl.getAttribLocation(program, "vPosition");
             gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(vPosition);
 
+            // Set color
             if (bufferInfo.fillmode == OUTLINE) {
                 gl.uniform4fv(fColor, flatten(object.lineColor));
             } else if (bufferInfo.fillmode == SURFACE) {
                 gl.uniform4fv(fColor, flatten(object.surfaceColor));
             }
 
+            // Draw current buffer in given color
             gl.drawArrays(bufferInfo.drawmode, 0, bufferInfo.numVertices);
         };
     };
