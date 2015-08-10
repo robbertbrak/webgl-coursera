@@ -21,7 +21,9 @@ var currentShape = 0;
 var currentObject = {};
 var surfaceColor = vec4(0.1, 0.6, 0.0, 1.0);
 var lineColor = vec4(0.0, 1.0, 0.0, 1.0);
-var currentRotation = [45, 145, 45];
+var currentRotateX = 45;
+var currentRotateY = 45;
+var currentRotateZ = 45;
 var currentPosition = [0, 0, 0];
 var cameraAngle = 0;
 var eye = [0, 0, 12];
@@ -49,11 +51,11 @@ function initShapes() {
 
 function initEventListeners() {
     $("#scale").val(currentScale);
-    $("#rotate-x").val(currentRotation[0]);
-    $("#rotate-y").val(currentRotation[1]);
-    $("#rotate-z").val(currentRotation[2]);
+    $("#rotate-x").val(currentRotateX);
+    $("#rotate-y").val(currentRotateY);
+    $("#rotate-z").val(currentRotateZ);
     $("#surface-color").spectrum({
-        color: tinycolor.fromRatio({ r: surfaceColor[0], g: surfaceColor[1], b: surfaceColor[2] }),
+        color: toColorPicker(surfaceColor),
         showPalette: true,
         palette: getPalette(),
         change: function(color) {
@@ -63,7 +65,7 @@ function initEventListeners() {
         }
     });
     $("#line-color").spectrum({
-        color: tinycolor.fromRatio({ r: lineColor[0], g: lineColor[1], b: lineColor[2] }),
+        color: toColorPicker(lineColor),
         showPalette: true,
         palette: getPalette(),
         change: function(color) {
@@ -74,45 +76,49 @@ function initEventListeners() {
     });
     $("#shape").change(function() { 
         currentShape = $(this).val(); 
-        currentObject.shape = shapes[currentShape];
+        currentObject.shape = currentShape;
     });
-    $("#add-shape").click(function() {
+    $("#add-object").click(function() {
         currentObject = {
-            shape: shapes[currentShape],
-            rotation: getRotationMatrix(),
-            scale: scale(currentScale, currentScale, currentScale),
-            translation: getTranslationMatrix(),
+            shape: currentShape,
+            x: currentPosition[0],
+            y: currentPosition[1],
+            z: currentPosition[2],
+            rotateX: currentRotateX,
+            rotateY: currentRotateY,
+            rotateZ: currentRotateZ,
+            scale: currentScale,
             lineColor: lineColor,
             surfaceColor: surfaceColor
         };
         objects.push(currentObject);
+        $("#current-object").append($("<option></option>")
+            .attr("value", objects.length - 1)
+            .text("object " + objects.length)); 
+        $("#current-object").val(objects.length - 1);
     });
     $("#scale").on("input", function() {
         currentScale = $(this).val();
-        currentObject.scale = scale(currentScale, currentScale, currentScale);
+        currentObject.scale = currentScale;
     });
     $("#z-depth").on("input", function() {
         var depth = $(this).val();
         currentPosition[2] = depth;
-        currentObject.translation = getTranslationMatrix();
+        currentObject.z = depth;
     });
     $("#camera-angle").on("input", function() {
         cameraAngle = $(this).val();
         var rotationMatrix = mult(scale(12, 12, 12), rotateY(cameraAngle));
         eye = vec3(rotationMatrix[2][0], rotationMatrix[2][1], rotationMatrix[2][2]);
-        console.log(eye);
     });
     $("#rotate-x").on("input", function() {
-        currentRotation[0] = $(this).val();
-        currentObject.rotation = getRotationMatrix();
+        currentObject.rotateX = $(this).val();
     });
     $("#rotate-y").on("input", function() {
-        currentRotation[1] = $(this).val();
-        currentObject.rotation = getRotationMatrix();
+        currentObject.rotateY = $(this).val();
     });
     $("#rotate-z").on("input", function() {
-        currentRotation[2] = $(this).val();
-        currentObject.rotation = getRotationMatrix();
+        currentObject.rotateZ = $(this).val();
     });
     $("#gl-canvas").mousedown(function(event) { 
         if(!event.ctrlKey) {
@@ -129,28 +135,72 @@ function initEventListeners() {
         } 
     });
 
+    $("#current-object").change(function() {
+        var objectIndex = $(this).val();
+        currentObject = objects[objectIndex];
+        $("#shape").val(currentObject.shape);
+        $("#rotate-x").val(currentObject.rotateX);
+        $("#rotate-y").val(currentObject.rotateY);
+        $("#rotate-z").val(currentObject.rotateZ);
+        $("#scale").val(currentObject.scale);
+        $("#z-depth").val(currentObject.z);
+        $("#surface-color").spectrum("set", toColorPicker(currentObject.surfaceColor));
+        $("#line-color").spectrum("set", toColorPicker(currentObject.lineColor));
+
+        // Animate the selected object.
+        var originalColor = currentObject.lineColor;
+        var white = vec4(1, 1, 1, 1)
+        var counter = 0;
+        var animation = window.setInterval(function() {
+            counter++;
+            if (counter % 2 == 0) {
+                currentObject.lineColor = originalColor;
+            } else {
+                currentObject.lineColor = white;
+            }
+        }, 100);
+        window.setTimeout(function() {
+            window.clearInterval(animation);
+            currentObject.lineColor = originalColor;
+        }, 1500);
+    });
+
+}
+
+function toColorPicker(v) {
+    var color = tinycolor.fromRatio({ r: v[0], g: v[1], b: v[2] });
+    console.log(color);
+    return color;
 }
 
 function moveObject(mouseEvent) {
     var c = coord(mouseEvent);
     currentPosition[0] = c[0];
     currentPosition[1] = c[1];
-    currentObject.translation = getTranslationMatrix();
+    currentObject.x = c[0];
+    currentObject.y = c[1];
 }
 
 function rotateObject(mouseEvent) {
     var c = coord(mouseEvent);
-    currentRotation[0] = 360 * (- c[1] + 1) / 2;
-    currentRotation[1] = 360 * (- c[0] + 1) / 2;
-    currentObject.rotation = getRotationMatrix();
+    currentRotateX = 360 * (c[1] + 1) / 2;
+    currentRotateY = 360 * (c[0] + 1) / 2;
+    currentObject.rotateX = currentRotateX;
+    currentObject.rotateY = currentRotateY;
+    $("#rotate-x").val(currentObject.rotateX);
+    $("#rotate-y").val(currentObject.rotateY);
 }
 
-function getRotationMatrix() {
-    return mult(mult(rotateX(currentRotation[0]), rotateY(currentRotation[1])), rotateZ(currentRotation[2]));
+function getRotationMatrix(x, y, z) {
+    return mult(mult(rotateX(x), rotateY(y)), rotateZ(z));
 }
 
-function getTranslationMatrix() {
-    return translate(currentPosition[0], currentPosition[1], currentPosition[2]);
+function getTranslationMatrix(x, y, z) {
+    return translate(x, y, z);
+}
+
+function getScaleMatrix(s) {
+    return scale(s, s, s);
 }
 
 function render() {
@@ -161,16 +211,19 @@ function render() {
         var object = objects[i];
 
         // Set transformation matrix for current object
-        var modelViewMatrix = mult(object.translation, mult(object.scale, object.rotation));
+        var modelViewMatrix = mult(getTranslationMatrix(object.x, object.y, object.z), 
+            mult(getScaleMatrix(object.scale), 
+                getRotationMatrix(object.rotateX, object.rotateY, object.rotateZ)));
 
         modelViewMatrix = mult(lookAt(eye, [0, 0, 0], [0, 1, 0]), modelViewMatrix);
         modelViewMatrix = mult(perspective(20, canvas.clientWidth / canvas.clientHeight, 1, 24), modelViewMatrix);
         gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
+        var shape = shapes[object.shape];
 
-        for (var j = 0; j < objects[i].shape.buffers.length; j++) {
+        for (var j = 0; j < shape.buffers.length; j++) {
 
             // Set current buffer
-            var bufferInfo = object.shape.buffers[j];
+            var bufferInfo = shape.buffers[j];
             gl.bindBuffer(gl.ARRAY_BUFFER, bufferInfo.buffer);
             var vPosition = gl.getAttribLocation(program, "vPosition");
             gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);

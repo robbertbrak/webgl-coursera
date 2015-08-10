@@ -36,7 +36,7 @@ void main() {
 <style type="text/css">
   html, body { margin: 0; padding: 0; background-color: rgb(90, 90, 90); color: white; font-family: Arial, sans-serif; }
   .form-group {  }
-  label { display: inline-block; width: 100px; vertical-align: middle; line-height: 2.3em; }
+  label { display: inline-block; width: 150px; vertical-align: middle; line-height: 2.3em; }
   input, select { display: inline-block; vertical-align: middle; line-height: 2.3em; }
   .slider { width: 300px; }
   .form { float: left; padding: 10px; }
@@ -47,8 +47,13 @@ void main() {
 <body>
 <div class="form">
   <div class="form-group">
-    <label for="add-shape">&nbsp;</label>
-    <button id="add-shape">Add shape</button>
+    <label for="add-object">&nbsp;</label>
+    <button id="add-object">Add object</button>
+  </div>
+  <div class="form-group">
+    <label for="current-object">Current object:</label>
+    <select id="current-object">
+    </select>
   </div>
   <div class="form-group">
     <label for="shape">Shape</label>
@@ -96,13 +101,14 @@ void main() {
     Click on the canvas to move the object.<br>
     Ctrl+Click and drag to rotate the object.
   </div>
+  <div class="footer">
+    Color picker: https://bgrins.github.io/spectrum/
+  </div>
 </div>
 
 <canvas id="gl-canvas" width="800" height="800">
   Oops ... your browser doesn"t support the HTML5 canvas element
 </canvas>
    
-<div class="footer">
-Color picker: https://bgrins.github.io/spectrum/
 </body>
 </html>
