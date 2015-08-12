@@ -10,15 +10,14 @@ var animate = true;
 var SURFACE = 1;
 var OUTLINE = 2;
 
+var fixedObjects = [];
 var objects = [];
 
 var modelViewMatrixLoc;
 
-var shapes = [];
-var currentScaleX = 0.2;
-var currentScaleY = 0.2;
-var currentScaleZ = 0.2;
-var currentShape = 0;
+var shapes = {};
+var currentScale = 0.2;
+var currentShape = "sphere";
 var currentObject = {};
 var surfaceColor = vec4(0.1, 0.6, 0.0, 1.0);
 var lineColor = vec4(0.0, 1.0, 0.0, 1.0);
@@ -26,11 +25,13 @@ var currentRotateX = 45;
 var currentRotateY = 45;
 var currentRotateZ = 45;
 var currentPosition = [0, 0, 0];
+var currentRotation = [45, 45, 45];
 var cameraAngleX = 0;
-var cameraAngleY = 0;
+var cameraAngleY = 45;
 var cameraAngleZ = 0;
 var cameraRadius = 6;
-var eye = [0, 0, cameraRadius];
+var eye = [4.158247202848457, 2.375470056608669, 3.6147091459975838];
+var up = [0, 1, 0];
 
 window.onload = function init() {
   initGlProgram();
@@ -44,10 +45,10 @@ window.onload = function init() {
   var xAxis = createAxis(vec4(-1, 0, 0, 1.0), vec4(1, 0, 0, 1.0), vec4(1.0, 0, 0, 1.0));
   var yAxis = createAxis(vec4(0, -1, 0, 1.0), vec4(0, 1, 0, 1.0), vec4(0, 1.0, 0, 1.0));
   var zAxis = createAxis(vec4(0, 0, -1, 1.0), vec4(0, 0, 1, 1.0), vec4(0, 0, 1.0, 1.0));
-  objects.push(xAxis, yAxis, zAxis);
-  objects.push(createArrow([1, 0, 0], [0, 90, 0], vec4(1.0, 0, 0, 1.0)));
-  objects.push(createArrow([0, 1, 0], [270, 0, 0], vec4(0, 1.0, 0, 1.0)));
-  objects.push(createArrow([0, 0, 1], [180, 0, 0], vec4(0, 0, 1.0, 1.0)));
+  fixedObjects.push(xAxis, yAxis, zAxis);
+  fixedObjects.push(createArrow([1, 0, 0], [0, 90, 0], vec4(1.0, 0, 0, 1.0)));
+  fixedObjects.push(createArrow([0, 1, 0], [270, 0, 0], vec4(0, 1.0, 0, 1.0)));
+  fixedObjects.push(createArrow([0, 0, 1], [180, 0, 0], vec4(0, 0, 1.0, 1.0)));
   render();
 }
 
@@ -64,7 +65,7 @@ function createAxis(a, b, color) {
 
 function createArrow(a, r, color) {
   return {
-    shape: shapes[2],
+    shape: shapes["cone"],
     x: a[0], y: a[1], z: a[2],
     rotateX: r[0], rotateY: r[1], rotateZ: r[2],
     scaleX: 0.03, scaleY: 0.03, scaleZ: 0.03,
@@ -78,19 +79,26 @@ function initShapes() {
   var cylinder = createCylinder(gl);
   var cone = createCone(gl);
   var cube = createCube(gl);
-  shapes.push(sphere, cylinder, cone, cube);
+  shapes = {
+    "sphere": sphere,
+    "cylinder": cylinder,
+    "cone": cone,
+    "cube": cube
+  };
 }
 
 function initEventListeners() {
-  $("#scale-x").val(currentScaleX);
-  $("#scale-y").val(currentScaleY);
-  $("#scale-z").val(currentScaleZ);
-  $("#rotate-x").val(currentRotateX);
-  $("#rotate-y").val(currentRotateY);
-  $("#rotate-z").val(currentRotateZ);
+  $("#translate-x").val(currentPosition[0]);
+  $("#translate-y").val(currentPosition[1]);
+  $("#translate-z").val(currentPosition[2]);
+  $("#scale").val(currentScale);
+  $("#rotate-x").val(currentRotation[0]);
+  $("#rotate-y").val(currentRotation[1]);
+  $("#rotate-z").val(currentRotation[2]);
   $("#camera-angle-x").val(cameraAngleX);
   $("#camera-angle-y").val(cameraAngleY);
   $("#camera-angle-z").val(cameraAngleZ);
+
   $("#surface-color").spectrum({
     color: toColorPicker(surfaceColor),
     showPalette: true,
@@ -114,39 +122,46 @@ function initEventListeners() {
   $("#shape").change(function() {
     currentShape = $(this).val();
     currentObject.shape = shapes[currentShape];
+    currentObject.shapeName = currentShape;
+    $("#current-object option:selected").text(objectName(currentObject));
   });
   $("#add-object").click(function() {
+    for (var i = 0; i < 3; i++) {
+      currentPosition[i] = random(-0.8, 0.8);
+    }
+    currentScale = random(0.01, 0.4);
+    $("#translate-x").val(currentPosition[0]);
+    $("#translate-y").val(currentPosition[1]);
+    $("#translate-z").val(currentPosition[2]);
+    $("#scale").val(currentScale);
+
     currentObject = {
+      shapeName: currentShape,
       shape: shapes[currentShape],
-      x: random(-0.8, 0.8),
-      y: random(-0.8, 0.8),
-      z: random(-0.8, 0.8),
+      x: currentPosition[0],
+      y: currentPosition[1],
+      z: currentPosition[2],
       rotateX: currentRotateX,
       rotateY: currentRotateY,
       rotateZ: currentRotateZ,
-      scaleX: currentScaleX,
-      scaleY: currentScaleY,
-      scaleZ: currentScaleZ,
+      scaleX: currentScale,
+      scaleY: currentScale,
+      scaleZ: currentScale,
       lineColor: lineColor,
       surfaceColor: surfaceColor
     };
     objects.push(currentObject);
+    currentObject.id = objects.length;
     $("#current-object").append($("<option></option>")
         .attr("value", objects.length - 1)
-        .text("object " + objects.length));
+        .text(objectName(currentObject)));
     $("#current-object").val(objects.length - 1);
   });
-  $("#scale-x").on("input", function() {
-    currentScaleX = $(this).val();
-    currentObject.scaleX = currentScaleX;
-  });
-  $("#scale-y").on("input", function() {
-    currentScaleY = $(this).val();
-    currentObject.scaleY = currentScaleY;
-  });
-  $("#scale-z").on("input", function() {
-    currentScaleZ = $(this).val();
-    currentObject.scaleZ = currentScaleZ;
+  $("#scale").on("input", function() {
+    currentScale = $(this).val();
+    currentObject.scaleX = currentScale;
+    currentObject.scaleY = currentScale;
+    currentObject.scaleZ = currentScale;
   });
   $("#translate-x").on("input", function() {
     var x = $(this).val();
@@ -164,20 +179,9 @@ function initEventListeners() {
     currentObject.z = z;
   });
   $("#camera-angle-x").on("input", function() {
-    cameraAngleX = $(this).val();
-    var r = cameraRadius;
-    var x = eye[0];
-    var y = eye[1];
-    var z = eye[2];
-    var sin = Math.sin(radians(cameraAngleX));
-    var cos = Math.cos(radians(cameraAngleX));
-    var h = Math.sqrt((r * r - x * x));
-    eye[0] = x;
-    eye[1] = h * cos;
-    eye[2] = h * sin;
-    if (eye[0] == 0 && eye[2] == 0) {
-      eye[0] = 0.0001;
-    }
+    var angle = radians($(this).val());
+    up[1] = Math.cos(angle);
+    up[2] = Math.sin(angle);
   });
 
   $("#camera-angle-y").on("input", function() {
@@ -192,22 +196,6 @@ function initEventListeners() {
     eye[0] = h * cos;
     eye[1] = y;
     eye[2] = h * sin;
-    if (eye[0] == 0 && eye[2] == 0) {
-      eye[0] = 0.0001;
-    }
-  });
-  $("#camera-angle-z").on("input", function() {
-    cameraAngleZ = $(this).val();
-    var r = cameraRadius;
-    var x = eye[0];
-    var y = eye[1];
-    var z = eye[2];
-    var sin = Math.sin(radians(cameraAngleZ));
-    var cos = Math.cos(radians(cameraAngleZ));
-    var h = Math.sqrt((r * r - z * z));
-    eye[0] = h * cos;
-    eye[1] = h * sin;
-    eye[2] = z;
     if (eye[0] == 0 && eye[2] == 0) {
       eye[0] = 0.0001;
     }
@@ -239,45 +227,42 @@ function initEventListeners() {
   $("#current-object").change(function() {
     var objectIndex = $(this).val();
     currentObject = objects[objectIndex];
-    $("#shape").val(currentObject.shape);
+    $("#shape").val(currentObject.shapeName);
     $("#rotate-x").val(currentObject.rotateX);
     $("#rotate-y").val(currentObject.rotateY);
     $("#rotate-z").val(currentObject.rotateZ);
-    $("#scale").val(currentObject.scale);
+    $("#scale").val(currentObject.scaleX);
     $("#z-depth").val(currentObject.z);
     $("#surface-color").spectrum("set", toColorPicker(currentObject.surfaceColor));
     $("#line-color").spectrum("set", toColorPicker(currentObject.lineColor));
 
     // Animate the selected object.
-    var originalColor = currentObject.lineColor;
-    var white = vec4(1, 1, 1, 1)
-    var counter = 0;
-    var animation = window.setInterval(function() {
-      counter++;
-      if (counter % 2 == 0) {
-        currentObject.lineColor = originalColor;
-      } else {
-        currentObject.lineColor = white;
-      }
-    }, 100);
-    window.setTimeout(function() {
-      window.clearInterval(animation);
-      currentObject.lineColor = originalColor;
-    }, 1500);
+    animateSelectedObject(currentObject);
   });
 
 }
 
-function getCameraMatrix() {
-  var radius = 4;
-  var rotationMatrix = mult(mult(rotateX(cameraAngleX), rotateY(cameraAngleY)), rotateZ(cameraAngleZ));
+function objectName(object) {
+  return "object " + currentObject.id + ": " + currentObject.shapeName;
+}
 
-  var translation = vec4(radius, radius, radius, 1.0)
-  var position = mult(rotationMatrix, vec4(radius, radius, radius, 1.0));
-  console.log(position);
-  return vec3(dot(rotationMatrix[0], translation),
-      dot(rotationMatrix[1], translation),
-      dot(rotationMatrix[2], translation));
+function animateSelectedObject(object) {
+  var originalColor = object.lineColor;
+  var white = vec4(1, 1, 1, 1)
+  var counter = 0;
+  var animation = window.setInterval(function() {
+    counter++;
+    if (counter % 2 == 0) {
+      object.lineColor = originalColor;
+    } else {
+      object.lineColor = white;
+    }
+  }, 100);
+  window.setTimeout(function() {
+    window.clearInterval(animation);
+    object.lineColor = originalColor;
+  }, 1500);
+
 }
 
 function toColorPicker(v) {
@@ -291,6 +276,9 @@ function moveObject(mouseEvent) {
   currentPosition[1] = c[1];
   currentObject.x = c[0];
   currentObject.y = c[1];
+  $("#translate-x").val(currentPosition[0]);
+  $("#translate-y").val(currentPosition[1]);
+  $("#translate-z").val(currentPosition[2]);
 }
 
 function rotateObject(mouseEvent) {
@@ -301,6 +289,53 @@ function rotateObject(mouseEvent) {
   currentObject.rotateY = currentRotateY;
   $("#rotate-x").val(currentObject.rotateX);
   $("#rotate-y").val(currentObject.rotateY);
+}
+
+function render() {
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  for (var i = 0; i < fixedObjects.length; i++) {
+    renderObject(fixedObjects[i]);
+  };
+  for (var i = 0; i < objects.length; i++) {
+    renderObject(objects[i]);
+  };
+
+  requestAnimFrame(render);
+}
+
+function renderObject(object) {
+
+  // Set transformation matrix for current object
+  var modelViewMatrix = mult(getTranslationMatrix(object.x, object.y, object.z),
+      mult(getScaleMatrix(object.scaleX, object.scaleY, object.scaleZ),
+          getRotationMatrix(object.rotateX, object.rotateY, object.rotateZ)));
+
+  modelViewMatrix = mult(lookAt(eye, [0, 0, 0], up), modelViewMatrix);
+  modelViewMatrix = mult(perspective(20, canvas.clientWidth / canvas.clientHeight, 1, 20), modelViewMatrix);
+  gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
+  var shape = object.shape;
+
+  for (var j = 0; j < shape.buffers.length; j++) {
+
+    // Set current buffer
+    var bufferInfo = shape.buffers[j];
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferInfo.buffer);
+    var vPosition = gl.getAttribLocation(program, "vPosition");
+    gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPosition);
+
+    // Set color
+    if (bufferInfo.fillmode == OUTLINE) {
+      gl.uniform4fv(fColor, flatten(object.lineColor));
+    } else if (bufferInfo.fillmode == SURFACE) {
+      gl.uniform4fv(fColor, flatten(object.surfaceColor));
+    }
+
+    // Draw current buffer in given color
+    gl.drawArrays(bufferInfo.drawmode, 0, bufferInfo.numVertices);
+  };
+
 }
 
 function getRotationMatrix(x, y, z) {
@@ -315,45 +350,14 @@ function getScaleMatrix(x, y, z) {
   return scale(x, y, z);
 }
 
-function render() {
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+function coord(event) {
+  var rect = canvas.getBoundingClientRect();
+  return vec2(2 * (event.clientX - rect.left) / canvas.width - 1,
+      2 * (canvas.height - (event.clientY - rect.top)) / canvas.height - 1);
+}
 
-
-  for (var i = 0; i < objects.length; i++) {
-    var object = objects[i];
-
-    // Set transformation matrix for current object
-    var modelViewMatrix = mult(getTranslationMatrix(object.x, object.y, object.z),
-        mult(getScaleMatrix(object.scaleX, object.scaleY, object.scaleZ),
-            getRotationMatrix(object.rotateX, object.rotateY, object.rotateZ)));
-
-    modelViewMatrix = mult(lookAt(eye, [0, 0, 0], [0, 1, 0]), modelViewMatrix);
-    modelViewMatrix = mult(perspective(20, canvas.clientWidth / canvas.clientHeight, 1, 20), modelViewMatrix);
-    gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
-    var shape = object.shape;
-
-    for (var j = 0; j < shape.buffers.length; j++) {
-
-      // Set current buffer
-      var bufferInfo = shape.buffers[j];
-      gl.bindBuffer(gl.ARRAY_BUFFER, bufferInfo.buffer);
-      var vPosition = gl.getAttribLocation(program, "vPosition");
-      gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(vPosition);
-
-      // Set color
-      if (bufferInfo.fillmode == OUTLINE) {
-        gl.uniform4fv(fColor, flatten(object.lineColor));
-      } else if (bufferInfo.fillmode == SURFACE) {
-        gl.uniform4fv(fColor, flatten(object.surfaceColor));
-      }
-
-      // Draw current buffer in given color
-      gl.drawArrays(bufferInfo.drawmode, 0, bufferInfo.numVertices);
-    };
-  };
-
-  requestAnimFrame(render);
+function random(min, max) {
+  return Math.random() * (max - min) + min;
 }
 
 function initGlProgram() {
@@ -375,16 +379,6 @@ function initGlProgram() {
 
   program = initShaders(gl, "vertex-shader", "fragment-shader");
   gl.useProgram(program);
-}
-
-function coord(event) {
-  var rect = canvas.getBoundingClientRect();
-  return vec2(2 * (event.clientX - rect.left) / canvas.width - 1,
-      2 * (canvas.height - (event.clientY - rect.top)) / canvas.height - 1);
-}
-
-function random(min, max) {
-  return Math.random() * (max - min) + min;
 }
 
 function getPalette() {
