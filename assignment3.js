@@ -14,6 +14,8 @@ var objects = [];
 var currentObject = {};
 var numObjectsCreated = 0;
 
+var mouseDown = false;
+
 var modelViewMatrixLoc;
 
 var shapes = {};
@@ -171,12 +173,14 @@ function initEventListeners() {
     currentObject.rotateZ = $(this).val();
   });
   $("#gl-canvas").mousedown(function(event) {
+    mouseDown = true;
     if(!event.ctrlKey) {
       moveObject(event);
     }
   });
+  $("#gl-canvas").mouseup(function(event) { mouseDown=false; });
   $("#gl-canvas").mousemove(function(event) {
-    if (event.which == 1 || event.buttons == 1) {
+    if (mouseDown) {
       if (!event.ctrlKey) {
         moveObject(event);
       } else {
