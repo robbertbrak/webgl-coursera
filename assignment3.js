@@ -5,30 +5,18 @@ var gl;
 var program;
 
 var fColor;
-var animate = true;
 
 var SURFACE = 1;
 var OUTLINE = 2;
 
 var fixedObjects = [];
 var objects = [];
+var currentObject = {};
+var numObjectsCreated = 0;
 
 var modelViewMatrixLoc;
 
 var shapes = {};
-var currentScale = 0.2;
-var currentShape = "sphere";
-var currentObject = {};
-var surfaceColor = vec4(0.1, 0.6, 0.0, 1.0);
-var lineColor = vec4(0.0, 1.0, 0.0, 1.0);
-var currentRotateX = 45;
-var currentRotateY = 45;
-var currentRotateZ = 45;
-var currentPosition = [0, 0, 0];
-var currentRotation = [45, 45, 45];
-var cameraAngleX = 0;
-var cameraAngleY = 45;
-var cameraAngleZ = 0;
 var cameraRadius = 6;
 var eye = [4.158247202848457, 2.375470056608669, 3.6147091459975838];
 var up = [0, 1, 0];
@@ -40,6 +28,15 @@ window.onload = function init() {
   modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
 
   initShapes();
+
+  currentObject.shapeName = "sphere";
+  currentObject.shape = shapes[currentObject.shapeName];
+  currentObject.lineColor = vec4(0.1, 0.6, 0.0, 1.0);
+  currentObject.surfaceColor = vec4(0.0, 1.0, 0.0, 1.0);
+  currentObject.rotateX = 45;
+  currentObject.rotateY = 45;
+  currentObject.rotateZ = 45;
+
   initEventListeners();
 
   var xAxis = createAxis(vec4(-1, 0, 0, 1.0), vec4(1, 0, 0, 1.0), vec4(1.0, 0, 0, 1.0));
@@ -50,7 +47,7 @@ window.onload = function init() {
   fixedObjects.push(createArrow([0, 1, 0], [270, 0, 0], vec4(0, 1.0, 0, 1.0)));
   fixedObjects.push(createArrow([0, 0, 1], [180, 0, 0], vec4(0, 0, 1.0, 1.0)));
   render();
-}
+};
 
 function createAxis(a, b, color) {
   return {
@@ -88,94 +85,57 @@ function initShapes() {
 }
 
 function initEventListeners() {
-  $("#translate-x").val(currentPosition[0]);
-  $("#translate-y").val(currentPosition[1]);
-  $("#translate-z").val(currentPosition[2]);
-  $("#scale").val(currentScale);
-  $("#rotate-x").val(currentRotation[0]);
-  $("#rotate-y").val(currentRotation[1]);
-  $("#rotate-z").val(currentRotation[2]);
-  $("#camera-angle-x").val(cameraAngleX);
-  $("#camera-angle-y").val(cameraAngleY);
-  $("#camera-angle-z").val(cameraAngleZ);
+  $("#translate-x").val(0);
+  $("#translate-y").val(0);
+  $("#translate-z").val(0);
+  $("#scale").val(0.2);
+  $("#rotate-x").val(45);
+  $("#rotate-y").val(45);
+  $("#rotate-z").val(45);
+  $("#camera-angle-x").val(0);
+  $("#camera-angle-y").val(45);
 
   $("#surface-color").spectrum({
-    color: toColorPicker(surfaceColor),
+    color: toColorPicker(currentObject.lineColor),
     showPalette: true,
     palette: getPalette(),
     change: function(color) {
       var rgb = color.toRgb();
-      surfaceColor = vec4(rgb.r / 255, rgb.g / 255, rgb.b / 255, rgb.a)
-      currentObject.surfaceColor = surfaceColor;
+      currentObject.surfaceColor = vec4(rgb.r / 255, rgb.g / 255, rgb.b / 255, rgb.a);
     }
   });
   $("#line-color").spectrum({
-    color: toColorPicker(lineColor),
+    color: toColorPicker(currentObject.surfaceColor),
     showPalette: true,
     palette: getPalette(),
     change: function(color) {
       var rgb = color.toRgb();
-      lineColor = vec4(rgb.r / 255, rgb.g / 255, rgb.b / 255, rgb.a);
-      currentObject.lineColor = lineColor;
+      currentObject.lineColor = vec4(rgb.r / 255, rgb.g / 255, rgb.b / 255, rgb.a);
     }
   });
   $("#shape").change(function() {
-    currentShape = $(this).val();
-    currentObject.shape = shapes[currentShape];
-    currentObject.shapeName = currentShape;
+    var shape = $(this).val();
+    currentObject.shape = shapes[shape];
+    currentObject.shapeName = shape;
     $("#current-object option:selected").text(objectName(currentObject));
   });
-  $("#add-object").click(function() {
-    for (var i = 0; i < 3; i++) {
-      currentPosition[i] = random(-0.8, 0.8);
-    }
-    currentScale = random(0.01, 0.4);
-    $("#translate-x").val(currentPosition[0]);
-    $("#translate-y").val(currentPosition[1]);
-    $("#translate-z").val(currentPosition[2]);
-    $("#scale").val(currentScale);
 
-    currentObject = {
-      shapeName: currentShape,
-      shape: shapes[currentShape],
-      x: currentPosition[0],
-      y: currentPosition[1],
-      z: currentPosition[2],
-      rotateX: currentRotateX,
-      rotateY: currentRotateY,
-      rotateZ: currentRotateZ,
-      scaleX: currentScale,
-      scaleY: currentScale,
-      scaleZ: currentScale,
-      lineColor: lineColor,
-      surfaceColor: surfaceColor
-    };
-    objects.push(currentObject);
-    currentObject.id = objects.length;
-    $("#current-object").append($("<option></option>")
-        .attr("value", objects.length - 1)
-        .text(objectName(currentObject)));
-    $("#current-object").val(objects.length - 1);
-  });
   $("#scale").on("input", function() {
-    currentScale = $(this).val();
-    currentObject.scaleX = currentScale;
-    currentObject.scaleY = currentScale;
-    currentObject.scaleZ = currentScale;
+    var scale = $(this).val();
+    currentObject.scaleX = scale;
+    currentObject.scaleY = scale;
+    currentObject.scaleZ = scale;
   });
   $("#translate-x").on("input", function() {
     var x = $(this).val();
-    currentPosition[2] = x;
     currentObject.x = x;
   });
   $("#translate-y").on("input", function() {
     var y = $(this).val();
-    currentPosition[2] = y;
     currentObject.y = y;
   });
   $("#translate-z").on("input", function() {
     var z = $(this).val();
-    currentPosition[2] = z;
     currentObject.z = z;
   });
   $("#camera-angle-x").on("input", function() {
@@ -185,7 +145,7 @@ function initEventListeners() {
   });
 
   $("#camera-angle-y").on("input", function() {
-    cameraAngleY = $(this).val();
+    var cameraAngleY = $(this).val();
     var r = cameraRadius;
     var x = eye[0];
     var y = eye[1];
@@ -197,6 +157,7 @@ function initEventListeners() {
     eye[1] = y;
     eye[2] = h * sin;
     if (eye[0] == 0 && eye[2] == 0) {
+      // To prevent division by zero
       eye[0] = 0.0001;
     }
   });
@@ -224,9 +185,55 @@ function initEventListeners() {
     }
   });
 
+  $("#add-object").click(function() {
+    var prev = currentObject;
+    var nextScale = random(0.01, 0.3);
+
+    currentObject = {
+      shapeName: prev.shapeName,
+      shape: shapes[prev.shapeName],
+      x: random(-0.8, 0.8),
+      y: random(-0.8, 0.8),
+      z: random(-0.8, 0.8),
+      rotateX: prev.rotateX,
+      rotateY: prev.rotateY,
+      rotateZ: prev.rotateZ,
+      scaleX: nextScale,
+      scaleY: nextScale,
+      scaleZ: nextScale,
+      lineColor: prev.lineColor,
+      surfaceColor: prev.surfaceColor
+    };
+
+    $("#translate-x").val(currentObject.x);
+    $("#translate-y").val(currentObject.y);
+    $("#translate-z").val(currentObject.z);
+    $("#scale").val(currentObject.scaleX);
+
+    numObjectsCreated++;
+    currentObject.id = numObjectsCreated;
+
+    objects.push(currentObject);
+    $("#current-object").append($("<option></option>")
+        .attr("value", currentObject.id)
+        .text(objectName(currentObject)));
+    $("#current-object").val(currentObject.id);
+  });
+
+  $("#remove-object").click(function() {
+    if (currentObject != null) {
+      var currentObjectIndex = findObjectIndex(currentObject.id);
+      objects.splice(currentObjectIndex, 1);
+      $("#current-object option:selected").remove();
+      if (objects.length > 0) {
+        $("#current-object").val(objects[objects.length - 1].id).change();
+      }
+    }
+  })
+
   $("#current-object").change(function() {
-    var objectIndex = $(this).val();
-    currentObject = objects[objectIndex];
+    currentObject = objects[findObjectIndex($(this).val())];
+    console.log(currentObject.shapeName);
     $("#shape").val(currentObject.shapeName);
     $("#rotate-x").val(currentObject.rotateX);
     $("#rotate-y").val(currentObject.rotateY);
@@ -240,6 +247,15 @@ function initEventListeners() {
     animateSelectedObject(currentObject);
   });
 
+}
+
+function findObjectIndex(id) {
+  for (var i = 0; i < objects.length; i++) {
+    if (objects[i].id == id) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 function objectName(object) {
@@ -266,27 +282,22 @@ function animateSelectedObject(object) {
 }
 
 function toColorPicker(v) {
-  var color = tinycolor.fromRatio({ r: v[0], g: v[1], b: v[2] });
-  return color;
+  return tinycolor.fromRatio({ r: v[0], g: v[1], b: v[2] });
 }
 
 function moveObject(mouseEvent) {
   var c = coord(mouseEvent);
-  currentPosition[0] = c[0];
-  currentPosition[1] = c[1];
   currentObject.x = c[0];
   currentObject.y = c[1];
-  $("#translate-x").val(currentPosition[0]);
-  $("#translate-y").val(currentPosition[1]);
-  $("#translate-z").val(currentPosition[2]);
+  $("#translate-x").val(currentObject.x);
+  $("#translate-y").val(currentObject.y);
+  $("#translate-z").val(currentObject.z);
 }
 
 function rotateObject(mouseEvent) {
   var c = coord(mouseEvent);
-  currentRotateX = 360 * (c[1] + 1) / 2;
-  currentRotateY = 360 * (c[0] + 1) / 2;
-  currentObject.rotateX = currentRotateX;
-  currentObject.rotateY = currentRotateY;
+  currentObject.rotateX = 360 * (c[1] + 1) / 2;
+  currentObject.rotateY = 360 * (c[0] + 1) / 2;
   $("#rotate-x").val(currentObject.rotateX);
   $("#rotate-y").val(currentObject.rotateY);
 }
@@ -296,10 +307,10 @@ function render() {
 
   for (var i = 0; i < fixedObjects.length; i++) {
     renderObject(fixedObjects[i]);
-  };
+  }
   for (var i = 0; i < objects.length; i++) {
     renderObject(objects[i]);
-  };
+  }
 
   requestAnimFrame(render);
 }

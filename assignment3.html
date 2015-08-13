@@ -41,14 +41,16 @@ void main() {
   .slider { width: 300px; }
   .form { float: left; padding: 10px; }
   canvas { float: left; margin: 0; padding: 0; cursor: crosshair; }
+  a { color: white; }
 </style>
 </head>
 
 <body>
-<div class="form">
+<div class="form" style="max-width: 500px">
   <div class="form-group">
     <label for="add-object">&nbsp;</label>
     <button id="add-object">Add object</button>
+    <button id="remove-object">Remove object</button>
   </div>
   <div class="form-group">
     <label for="current-object">Current object:</label>
@@ -110,11 +112,21 @@ void main() {
   </div>
 
   <div class="form-group">
-    Click on the canvas to move the object.<br>
-    Ctrl+Click and drag to rotate the object.
+    <h2>Instructions</h2>
+    <p>
+      Click 'Add object' to add an object to the canvas, then use the menu options to change its properties.
+      Select a 'Current object' to change objects added earlier.
+    </p>
+    <p>
+      Note: You <em>can</em> also click and drag on the canvas to move the object along the x and y axis, but the results
+      might be unexpected due to camera rotation.
+    </p>
+    <p>
+      Ctrl+Click and drag on the canvas is an alternative way to rotate an object along the x and y axis.
+    </p>
   </div>
   <div class="footer">
-    Color picker: https://bgrins.github.io/spectrum/
+    Color picker: <a href="https://bgrins.github.io/spectrum/">https://bgrins.github.io/spectrum/</a>
   </div>
 </div>
 
