@@ -122,56 +122,31 @@ function initEventListeners() {
     $("#current-object option:selected").text(objectName(currentObject));
   });
 
-  $("#scale").on("input", function() {
-    var scale = $(this).val();
-    currentObject.scaleX = scale;
-    currentObject.scaleY = scale;
-    currentObject.scaleZ = scale;
-  });
-  $("#translate-x").on("input", function() {
-    var x = $(this).val();
-    currentObject.x = x;
-  });
-  $("#translate-y").on("input", function() {
-    var y = $(this).val();
-    currentObject.y = y;
-  });
-  $("#translate-z").on("input", function() {
-    var z = $(this).val();
-    currentObject.z = z;
-  });
-  $("#camera-angle-x").on("input", function() {
-    var angle = radians($(this).val());
-    up[1] = Math.cos(angle);
-    up[2] = Math.sin(angle);
-  });
+  $("#scale").on("input", function() { changeScale($(this).val()) });
+  $("#scale").on("change", function() { changeScale($(this).val()) });
 
-  $("#camera-angle-y").on("input", function() {
-    var cameraAngleY = $(this).val();
-    var r = cameraRadius;
-    var x = eye[0];
-    var y = eye[1];
-    var z = eye[2];
-    var sin = Math.sin(radians(cameraAngleY));
-    var cos = Math.cos(radians(cameraAngleY));
-    var h = Math.sqrt((r * r - y * y));
-    eye[0] = h * cos;
-    eye[1] = y;
-    eye[2] = h * sin;
-    if (eye[0] == 0 && eye[2] == 0) {
-      // To prevent division by zero
-      eye[0] = 0.0001;
-    }
-  });
-  $("#rotate-x").on("input", function() {
-    currentObject.rotateX = $(this).val();
-  });
-  $("#rotate-y").on("input", function() {
-    currentObject.rotateY = $(this).val();
-  });
-  $("#rotate-z").on("input", function() {
-    currentObject.rotateZ = $(this).val();
-  });
+  $("#translate-x").on("input", function() { changeTranslation($(this).val(), "x") });
+  $("#translate-y").on("input", function() { changeTranslation($(this).val(), "y") });
+  $("#translate-z").on("input", function() { changeTranslation($(this).val(), "z") });
+  $("#translate-x").on("change", function() { changeTranslation($(this).val(), "x") });
+  $("#translate-y").on("change", function() { changeTranslation($(this).val(), "y") });
+  $("#translate-z").on("change", function() { changeTranslation($(this).val(), "z") });
+
+
+  $("#camera-angle-x").on("input", function() { changeCameraX($(this).val()) });
+  $("#camera-angle-x").on("change", function() { changeCameraX($(this).val()) });
+
+  $("#camera-angle-y").on("input", function() { changeCameraY($(this).val()) });
+  $("#camera-angle-y").on("change", function() { changeCameraY($(this).val()) });
+
+  $("#rotate-x").on("input", function() { changeRotation($(this).val(), "X") });
+  $("#rotate-y").on("input", function() { changeRotation($(this).val(), "Y") });
+  $("#rotate-z").on("input", function() { changeRotation($(this).val(), "Z") });
+  $("#rotate-x").on("change", function() { changeRotation($(this).val(), "X") });
+  $("#rotate-y").on("change", function() { changeRotation($(this).val(), "Y") });
+  $("#rotate-z").on("change", function() { changeRotation($(this).val(), "Z") });
+
+
   $("#gl-canvas").mousedown(function(event) {
     mouseDown = true;
     if(!event.ctrlKey) {
@@ -237,7 +212,6 @@ function initEventListeners() {
 
   $("#current-object").change(function() {
     currentObject = objects[findObjectIndex($(this).val())];
-    console.log(currentObject.shapeName);
     $("#shape").val(currentObject.shapeName);
     $("#rotate-x").val(currentObject.rotateX);
     $("#rotate-y").val(currentObject.rotateY);
@@ -251,6 +225,43 @@ function initEventListeners() {
     animateSelectedObject(currentObject);
   });
 
+}
+
+function changeScale(scale) {
+  currentObject.scaleX = scale;
+  currentObject.scaleY = scale;
+  currentObject.scaleZ = scale;
+}
+
+function changeTranslation(val, axis) {
+  currentObject[axis] = val;
+}
+
+function changeCameraX(angle) {
+  angle = radians(angle);
+  up[1] = Math.cos(angle);
+  up[2] = Math.sin(angle);
+}
+
+function changeCameraY(cameraAngleY) {
+  var r = cameraRadius;
+  var x = eye[0];
+  var y = eye[1];
+  var z = eye[2];
+  var sin = Math.sin(radians(cameraAngleY));
+  var cos = Math.cos(radians(cameraAngleY));
+  var h = Math.sqrt((r * r - y * y));
+  eye[0] = h * cos;
+  eye[1] = y;
+  eye[2] = h * sin;
+  if (eye[0] == 0 && eye[2] == 0) {
+    // To prevent division by zero
+    eye[0] = 0.0001;
+  }
+}
+
+function changeRotation(val, axis) {
+  currentObject["rotate" + axis] = val;
 }
 
 function findObjectIndex(id) {
@@ -320,7 +331,6 @@ function render() {
 }
 
 function renderObject(object) {
-
   // Set transformation matrix for current object
   var modelViewMatrix = mult(getTranslationMatrix(object.x, object.y, object.z),
       mult(getScaleMatrix(object.scaleX, object.scaleY, object.scaleZ),
