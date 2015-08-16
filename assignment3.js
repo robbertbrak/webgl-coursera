@@ -90,7 +90,9 @@ function initEventListeners() {
   $("#translate-x").val(0);
   $("#translate-y").val(0);
   $("#translate-z").val(0);
-  $("#scale").val(0.2);
+  $("#scale-x").val(0.2);
+  $("#scale-y").val(0.2);
+  $("#scale-z").val(0.2);
   $("#rotate-x").val(45);
   $("#rotate-y").val(45);
   $("#rotate-z").val(45);
@@ -122,8 +124,12 @@ function initEventListeners() {
     $("#current-object option:selected").text(objectName(currentObject));
   });
 
-  $("#scale").on("input", function() { changeScale($(this).val()) });
-  $("#scale").on("change", function() { changeScale($(this).val()) });
+  $("#scale-x").on("input", function() { changeScale($(this).val(), "X") });
+  $("#scale-x").on("change", function() { changeScale($(this).val(), "X") });
+  $("#scale-y").on("input", function() { changeScale($(this).val(), "Y") });
+  $("#scale-y").on("change", function() { changeScale($(this).val(), "Y") });
+  $("#scale-z").on("input", function() { changeScale($(this).val(), "Z") });
+  $("#scale-z").on("change", function() { changeScale($(this).val(), "Z") });
 
   $("#translate-x").on("input", function() { changeTranslation($(this).val(), "x") });
   $("#translate-y").on("input", function() { changeTranslation($(this).val(), "y") });
@@ -187,7 +193,9 @@ function initEventListeners() {
     $("#translate-x").val(currentObject.x);
     $("#translate-y").val(currentObject.y);
     $("#translate-z").val(currentObject.z);
-    $("#scale").val(currentObject.scaleX);
+    $("#scale-x").val(currentObject.scaleX);
+    $("#scale-y").val(currentObject.scaleY);
+    $("#scale-z").val(currentObject.scaleZ);
 
     numObjectsCreated++;
     currentObject.id = numObjectsCreated;
@@ -216,7 +224,9 @@ function initEventListeners() {
     $("#rotate-x").val(currentObject.rotateX);
     $("#rotate-y").val(currentObject.rotateY);
     $("#rotate-z").val(currentObject.rotateZ);
-    $("#scale").val(currentObject.scaleX);
+    $("#scale-x").val(currentObject.scaleX);
+    $("#scale-y").val(currentObject.scaleY);
+    $("#scale-z").val(currentObject.scaleZ);
     $("#z-depth").val(currentObject.z);
     $("#surface-color").spectrum("set", toColorPicker(currentObject.surfaceColor));
     $("#line-color").spectrum("set", toColorPicker(currentObject.lineColor));
@@ -227,10 +237,8 @@ function initEventListeners() {
 
 }
 
-function changeScale(scale) {
-  currentObject.scaleX = scale;
-  currentObject.scaleY = scale;
-  currentObject.scaleZ = scale;
+function changeScale(scale, axis) {
+  currentObject["scale" + axis] = scale;
 }
 
 function changeTranslation(val, axis) {
@@ -333,8 +341,8 @@ function render() {
 function renderObject(object) {
   // Set transformation matrix for current object
   var modelViewMatrix = mult(getTranslationMatrix(object.x, object.y, object.z),
-      mult(getScaleMatrix(object.scaleX, object.scaleY, object.scaleZ),
-          getRotationMatrix(object.rotateX, object.rotateY, object.rotateZ)));
+      mult(getRotationMatrix(object.rotateX, object.rotateY, object.rotateZ),
+          getScaleMatrix(object.scaleX, object.scaleY, object.scaleZ)));
 
   modelViewMatrix = mult(lookAt(eye, [0, 0, 0], up), modelViewMatrix);
   modelViewMatrix = mult(perspective(20, canvas.clientWidth / canvas.clientHeight, 1, 20), modelViewMatrix);
