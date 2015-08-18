@@ -24,18 +24,19 @@ var cameraAngle = 0;
 var eye = [4.158247202848457, 2.375470056608669, 3.6147091459975838];
 var up = [0, 1, 0];
 
-var lightPosition = vec4(0, 0, 0, 1.0);
-var lightAngle = [0, 0, 0];
+var lightPositions = [ vec4(0, 0, 0, 1), vec4(1, 1, 1, 1), vec4(0.5, 0.5, 0.5, 1) ];
+var lightAngles = [ [0, 0, 0], [180, 0, 90], [60, 60, 60] ];
+var lightBulbs = [ [], [], [] ];
+
 var lightAmbient = vec4(0.4, 0.4, 0.4, 1.0 );
 var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
 var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 
 var materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
 var materialDiffuse = vec4( 1.0, 0.8, 0.0, 1.0);
-var materialSpecular = vec4( 1.0, 0.8, 1.0, 1.0 );
-var materialShininess = 10.0;
+var materialSpecular = vec4( 0.7, 0.5, 0.5, 1.0 );
+var materialShininess = 50.0;
 
-var lightBulb;
 
 window.onload = function init() {
   initGlProgram();
@@ -71,20 +72,23 @@ window.onload = function init() {
   fixedObjects.push(createArrow([1, 0, 0], [0, 90, 0], vec4(1.0, 0, 0, 1.0)));
   fixedObjects.push(createArrow([0, 1, 0], [270, 0, 0], vec4(0, 1.0, 0, 1.0)));
   fixedObjects.push(createArrow([0, 0, 1], [180, 0, 0], vec4(0, 0, 1.0, 1.0)));
-  fixedObjects.push(createLightSource());
+  createLightSource();
+  for (var i = 0; i < lightBulbs.length; i++) {
+    fixedObjects.push(lightBulbs[i]);
+  }
   render();
 };
 
-function moveLight() {
-  lightAngle[0] += random(0, 1);
-  lightAngle[1] += random(0, 1);
-  lightAngle[2] += random(0, 1);
-  lightPosition[0] = Math.sin(radians(lightAngle[0]));
-  lightPosition[1] = Math.sin(radians(lightAngle[1]));
-  lightPosition[2] = Math.sin(radians(lightAngle[2]));
-  lightBulb.x = - lightPosition[0];
-  lightBulb.y = - lightPosition[1];
-  lightBulb.z = - lightPosition[2];
+function moveLights() {
+  for (var i = 0; i < lightAngles.length; i++) {
+    for (var j = 0; j < 3; j++) {
+      lightAngles[i][j] += random(0, 1);
+      lightPositions[i][j] = Math.sin(radians(lightAngles[i][j]));
+    }
+    lightBulbs[i].x = - lightPositions[i][0];
+    lightBulbs[i].y = - lightPositions[i][1];
+    lightBulbs[i].z = - lightPositions[i][2];
+  }
 }
 
 function render() {
@@ -92,8 +96,8 @@ function render() {
 
   cameraAngle += 0.05;
   changeCameraY(cameraAngle);
-  moveLight();
-  gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
+  moveLights();
+  gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPositions));
 
   for (var i = 0; i < fixedObjects.length; i++) {
     renderObject(fixedObjects[i]);
@@ -170,14 +174,16 @@ function createArrow(a, r, color) {
 }
 
 function createLightSource() {
-  lightBulb = {
-    shape: shapes["sphere"],
-    x: lightPosition[0], y: lightPosition[1], z: lightPosition[2],
-    rotateX: 0, rotateY: 0, rotateZ: 0,
-    scaleX: 0.03, scaleY: 0.03, scaleZ: 0.03,
-    surfaceColor: vec4(1, 1, 1, 1)
+  for (var i = 0; i < lightBulbs.length; i++) {
+    lightBulbs[i] = {
+      shape: shapes["sphere"],
+      x: lightPositions[i][0], y: lightPositions[i][1], z: lightPositions[i][2],
+      rotateX: 0, rotateY: 0, rotateZ: 0,
+      scaleX: 0.03, scaleY: 0.03, scaleZ: 0.03,
+      surfaceColor: vec4(1, 1, 1, 1)
+    }
   }
-  return lightBulb;
+  return lightBulbs;
 }
 
 function initShapes() {
@@ -432,10 +438,10 @@ function changeTranslation(val, axis) {
 }
 
 function changeLight(val, axis) {
-  lightPosition[axis] = val;
-  lightBulb.x = - lightPosition[0];
-  lightBulb.y = - lightPosition[1];
-  lightBulb.z = - lightPosition[2];
+  lightPositions[axis] = val;
+  lightBulbs.x = - lightPositions[0];
+  lightBulbs.y = - lightPositions[1];
+  lightBulbs.z = - lightPositions[2];
 }
 
 function changeCameraX(angle) {

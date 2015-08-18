@@ -11,37 +11,44 @@ varying vec4 fColor;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 uniform vec4 ambientProduct, diffuseProduct, specularProduct;
-uniform vec4 lightPosition;
+uniform vec4 lightPosition[3];
 uniform float shininess;
 
 void main() {
   vec3 pos = -(modelViewMatrix * vPosition).xyz;
-  vec3 light = lightPosition.xyz;
-  vec3 L = normalize(light - pos);
-  vec3 E = normalize(- pos);
-  vec3 H = normalize(L + E);
-
+  vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
   vec4 NN = vec4(vNormal, 0);
 
   // Transform vertex normal into eye coordinates
   vec3 N = normalize((modelViewMatrix * NN).xyz);
+  vec3 E = normalize(- pos);
 
   // Compute terms in the illumination equation
   vec4 ambient = ambientProduct;
 
-  float Kd = max(dot(L, N), 0.0);
-  vec4  diffuse = Kd * diffuseProduct;
 
-  float Ks = pow(max(dot(N, H), 0.0), shininess);
-  vec4  specular = Ks * specularProduct;
+  for (int i = 0; i < 3; i++) {
 
-  if (dot(L, N) < 0.0) {
-    specular = vec4(0.0, 0.0, 0.0, 1.0);
+    vec3 light = lightPosition[i].xyz;
+    vec3 L = normalize(light - pos);
+    vec3 H = normalize(L + E);
+
+    float Kd = max(dot(L, N), 0.0);
+    vec4  diffuse = Kd * diffuseProduct;
+
+    float Ks = pow(max(dot(N, H), 0.0), shininess);
+    vec4  specular = Ks * specularProduct;
+
+    if (dot(L, N) < 0.0) {
+      specular = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+
+    color = color + diffuse + specular;
+    color.a = 1.0;
   }
 
-  fColor = ambient + diffuse + specular;
+  fColor = color + ambient;
   fColor.a = 1.0;
-
   gl_Position = projectionMatrix * modelViewMatrix * vPosition;
 }
 

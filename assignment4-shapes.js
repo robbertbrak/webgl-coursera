@@ -106,7 +106,6 @@ function createCylinder(gl) {
 
     shape.buffers.push(createBuffer(gl, disc, gl.TRIANGLES, SURFACE));
     shape.normals.push(createNormalBuffer(gl, discNormal));
-    //shape.buffers.push(createBuffer(gl, lineloop, gl.LINE_LOOP, OUTLINE));
   }
 
   var tube = [];
@@ -124,12 +123,11 @@ function createCylinder(gl) {
 
   shape.buffers.push(createBuffer(gl, tube, gl.TRIANGLES, SURFACE));
   shape.normals.push(createNormalBuffer(gl, tubeNormal));
-  //shape.buffers.push(createBuffer(gl, lines, gl.LINES, OUTLINE));
   return shape;
 }
 
 function createCircle(gl) {
-  var edges = 30;
+  var edges = 180;
   var circle = [];
   for (var i = 0; i < edges; i++) {
     var edge = vec2(Math.cos(2*Math.PI*i/edges) / Math.sqrt(2), Math.sin(2*Math.PI*i/edges) / Math.sqrt(2));
@@ -182,12 +180,11 @@ function createSphere(gl) {
   var shape = { buffers: [], normals: [] };
   shape.buffers.push(createBuffer(gl, points, gl.TRIANGLES, SURFACE));
   shape.normals.push(createNormalBuffer(gl, normals));
-  // shape.buffers.push(createBuffer(gl, points, gl.LINE_STRIP, OUTLINE));
   return shape;
 }
 
 function triangle(vertices, points, normals, a, b, c) {
-  var tesselationDepth = 4;
+  var tesselationDepth = 5;
   divideTriangles(points, normals, vertices[a], vertices[b], vertices[c], tesselationDepth);
 }
 
