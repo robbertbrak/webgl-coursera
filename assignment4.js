@@ -33,7 +33,7 @@ var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
 var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 
 var materialAmbient = vec4( 1.0, 1.0, 1.0, 1.0 );
-var materialDiffuse = vec4( 1.0, 1.0, 1.0, 1.0);
+var materialDiffuse = vec4( 0.8, 0.8, 0.8, 1.0);
 var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 var materialShininess = 50.0;
 var constantAttenuation = 1.0;
@@ -48,19 +48,15 @@ window.onload = function init() {
 
   baseColor = gl.getUniformLocation(program, "baseColor");
 
-  var ambientProduct = mult(lightAmbient, materialAmbient);
-  var diffuseProduct = mult(lightDiffuse, materialDiffuse);
-  var specularProduct = mult(lightSpecular, materialSpecular);
-  gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
-  gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
-  gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
-
   initShapes();
 
   currentObject.shapeName = "sphere";
   currentObject.shape = shapes[currentObject.shapeName];
-  currentObject.lineColor = vec4(0.1, 0.6, 0.0, 1.0);
   currentObject.surfaceColor = vec4(0.0, 1.0, 0.0, 1.0);
+  currentObject.materialAmbient = materialAmbient;
+  currentObject.materialDiffuse = materialDiffuse;
+  currentObject.materialSpecular = materialSpecular;
+  currentObject.materialShininess = materialShininess;
   currentObject.rotateX = 45;
   currentObject.rotateY = 45;
   currentObject.rotateZ = 45;
@@ -76,7 +72,7 @@ window.onload = function init() {
   fixedObjects.push(createArrow([0, 0, 1], [180, 0, 0], vec4(0, 0, 1.0, 1.0)));
   createLightSource();
   for (var i = 0; i < 3; i++) {
-    fixedObjects.push(lightBulbs[i]);
+    // fixedObjects.push(lightBulbs[i]);
   }
   render();
 };
@@ -85,7 +81,7 @@ function moveLights() {
   for (var i = 0; i < lightAngles.length; i++) {
     for (var j = 0; j < 3; j++) {
       lightAngles[i][j] += random(0, 1);
-      lightPositions[i][j] = 3 * Math.sin(radians(lightAngles[i][j]));
+      lightPositions[i][j] = 5 * Math.sin(radians(lightAngles[i][j]));
     }
     lightBulbs[i].x = - lightPositions[i][0];
     lightBulbs[i].y = - lightPositions[i][1];
@@ -121,7 +117,6 @@ function renderObject(object) {
   var projection = mult(perspective(20, canvas.clientWidth / canvas.clientHeight, 1, 20), lookAt(eye, [0, 0, 0], up))
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "projectionMatrix"), false, flatten(projection));
 
-  gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
   gl.uniform1f(gl.getUniformLocation(program, "constantAttenuation"), constantAttenuation);
   gl.uniform1f(gl.getUniformLocation(program, "linearAttenuation"), linearAttenuation);
   gl.uniform1f(gl.getUniformLocation(program, "quadraticAttenuation"), quadraticAttenuation);
@@ -152,6 +147,14 @@ function renderObject(object) {
       gl.uniform4fv(baseColor, flatten(object.surfaceColor));
     }
 
+    var ambientProduct = mult(lightAmbient, object.materialAmbient);
+    var diffuseProduct = mult(lightDiffuse, object.materialDiffuse);
+    var specularProduct = mult(lightSpecular, object.materialSpecular);
+    gl.uniform1f(gl.getUniformLocation(program, "materialShininess"), object.materialShininess);
+    gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
+
     // Draw current buffer in given color
     gl.drawArrays(bufferInfo.drawmode, 0, bufferInfo.numVertices);
   }
@@ -164,7 +167,10 @@ function createAxis(a, b, color) {
     rotateX: 0, rotateY: 0, rotateZ: 0,
     scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0,
     lineColor: color,
-    surfaceColor: color
+    materialAmbient: color,
+    materialDiffuse: color,
+    materialSpecular: materialSpecular,
+    materialShininess: 128
   };
 }
 
@@ -174,8 +180,11 @@ function createArrow(a, r, color) {
     x: a[0], y: a[1], z: a[2],
     rotateX: r[0], rotateY: r[1], rotateZ: r[2],
     scaleX: 0.03, scaleY: 0.03, scaleZ: 0.03,
-    lineColor: color,
-    surfaceColor: color
+    surfaceColor: color,
+    materialAmbient: color,
+    materialDiffuse: color,
+    materialSpecular: materialSpecular,
+    materialShininess: 40
   };
 }
 
@@ -186,7 +195,11 @@ function createLightSource() {
       x: lightPositions[i][0], y: lightPositions[i][1], z: lightPositions[i][2],
       rotateX: 0, rotateY: 0, rotateZ: 0,
       scaleX: 0.03, scaleY: 0.03, scaleZ: 0.03,
-      surfaceColor: vec4(1, 1, 1, 1)
+      surfaceColor: vec4(1, 1, 1, 1),
+      materialAmbient: materialAmbient,
+      materialDiffuse: materialDiffuse,
+      materialSpecular: materialSpecular,
+      materialShininess: 128
     }
   }
   return lightBulbs;
@@ -249,59 +262,24 @@ function initGlProgram() {
   gl.useProgram(program);
 }
 
-function getPalette() {
-  return [
-    ["rgb(0, 0, 0)", "rgb(67, 67, 67)", "rgb(102, 102, 102)",
-      "rgb(204, 204, 204)", "rgb(217, 217, 217)","rgb(255, 255, 255)"],
-    ["rgb(152, 0, 0)", "rgb(255, 0, 0)", "rgb(255, 153, 0)", "rgb(255, 255, 0)", "rgb(0, 255, 0)",
-      "rgb(0, 255, 255)", "rgb(74, 134, 232)", "rgb(0, 0, 255)", "rgb(153, 0, 255)", "rgb(255, 0, 255)"],
-    ["rgb(230, 184, 175)", "rgb(244, 204, 204)", "rgb(252, 229, 205)", "rgb(255, 242, 204)", "rgb(217, 234, 211)",
-      "rgb(208, 224, 227)", "rgb(201, 218, 248)", "rgb(207, 226, 243)", "rgb(217, 210, 233)", "rgb(234, 209, 220)"],
-    ["rgb(221, 126, 107)", "rgb(234, 153, 153)", "rgb(249, 203, 156)", "rgb(255, 229, 153)", "rgb(182, 215, 168)",
-      "rgb(162, 196, 201)", "rgb(164, 194, 244)", "rgb(159, 197, 232)", "rgb(180, 167, 214)", "rgb(213, 166, 189)"],
-    ["rgb(204, 65, 37)", "rgb(224, 102, 102)", "rgb(246, 178, 107)", "rgb(255, 217, 102)", "rgb(147, 196, 125)",
-      "rgb(118, 165, 175)", "rgb(109, 158, 235)", "rgb(111, 168, 220)", "rgb(142, 124, 195)", "rgb(194, 123, 160)"],
-    ["rgb(166, 28, 0)", "rgb(204, 0, 0)", "rgb(230, 145, 56)", "rgb(241, 194, 50)", "rgb(106, 168, 79)",
-      "rgb(69, 129, 142)", "rgb(60, 120, 216)", "rgb(61, 133, 198)", "rgb(103, 78, 167)", "rgb(166, 77, 121)"],
-    ["rgb(91, 15, 0)", "rgb(102, 0, 0)", "rgb(120, 63, 4)", "rgb(127, 96, 0)", "rgb(39, 78, 19)",
-      "rgb(12, 52, 61)", "rgb(28, 69, 135)", "rgb(7, 55, 99)", "rgb(32, 18, 77)", "rgb(76, 17, 48)"]
-  ];
-}
-
 function initEventListeners() {
   $("#constantAttenuation").val(constantAttenuation);
   $("#linearAttenuation").val(linearAttenuation);
   $("#quadraticAttenuation").val(quadraticAttenuation);
+  $("#scale").val(0);
   $("#translate-x").val(0);
   $("#translate-y").val(0);
   $("#translate-z").val(0);
-  $("#scale-x").val(0.2);
-  $("#scale-y").val(0.2);
-  $("#scale-z").val(0.2);
   $("#rotate-x").val(45);
   $("#rotate-y").val(45);
   $("#rotate-z").val(45);
-  $("#camera-angle-x").val(0);
-  $("#camera-angle-y").val(45);
+  $("#materialShininess").val(materialShininess);
 
-  $("#surface-color").spectrum({
-    color: toColorPicker(currentObject.lineColor),
-    showPalette: true,
-    palette: getPalette(),
-    change: function(color) {
-      var rgb = color.toRgb();
-      currentObject.surfaceColor = vec4(rgb.r / 255, rgb.g / 255, rgb.b / 255, rgb.a);
-    }
-  });
-  $("#line-color").spectrum({
-    color: toColorPicker(currentObject.surfaceColor),
-    showPalette: true,
-    palette: getPalette(),
-    change: function(color) {
-      var rgb = color.toRgb();
-      currentObject.lineColor = vec4(rgb.r / 255, rgb.g / 255, rgb.b / 255, rgb.a);
-    }
-  });
+  addColorPicker("surfaceColor", "surfaceColor");
+  addColorPicker("materialAmbient", "materialAmbient");
+  addColorPicker("materialDiffuse", "materialDiffuse");
+  addColorPicker("materialSpecular", "materialSpecular");
+
   $("#shape").change(function() {
     var shape = $(this).val();
     currentObject.shape = shapes[shape];
@@ -312,12 +290,8 @@ function initEventListeners() {
   $("#scale").on("input", function() { changeScale($(this).val()) });
   $("#scale").on("change", function() { changeScale($(this).val()) });
 
-  $("#scale-x").on("input", function() { changeScale($(this).val(), "X") });
-  $("#scale-x").on("change", function() { changeScale($(this).val(), "X") });
-  $("#scale-y").on("input", function() { changeScale($(this).val(), "Y") });
-  $("#scale-y").on("change", function() { changeScale($(this).val(), "Y") });
-  $("#scale-z").on("input", function() { changeScale($(this).val(), "Z") });
-  $("#scale-z").on("change", function() { changeScale($(this).val(), "Z") });
+  $("#materialShininess").on("input", function() { currentObject.materialShininess = $(this).val(); });
+  $("#materialShininess").on("change", function() { currentObject.materialShininess = $(this).val(); });
 
   $("#translate-x").on("input", function() { changeTranslation($(this).val(), "x") });
   $("#translate-y").on("input", function() { changeTranslation($(this).val(), "y") });
@@ -325,20 +299,6 @@ function initEventListeners() {
   $("#translate-x").on("change", function() { changeTranslation($(this).val(), "x") });
   $("#translate-y").on("change", function() { changeTranslation($(this).val(), "y") });
   $("#translate-z").on("change", function() { changeTranslation($(this).val(), "z") });
-
-  $("#light-x").on("input", function() { changeLight($(this).val(), 0) });
-  $("#light-y").on("input", function() { changeLight($(this).val(), 1) });
-  $("#light-z").on("input", function() { changeLight($(this).val(), 2) });
-  $("#light-x").on("change", function() { changeLight($(this).val(), 0) });
-  $("#light-y").on("change", function() { changeLight($(this).val(), 1) });
-  $("#light-z").on("change", function() { changeLight($(this).val(), 2) });
-
-
-  $("#camera-angle-x").on("input", function() { changeCameraX($(this).val()) });
-  $("#camera-angle-x").on("change", function() { changeCameraX($(this).val()) });
-
-  $("#camera-angle-y").on("input", function() { changeCameraY($(this).val()) });
-  $("#camera-angle-y").on("change", function() { changeCameraY($(this).val()) });
 
   $("#rotate-x").on("input", function() { changeRotation($(this).val(), "X") });
   $("#rotate-y").on("input", function() { changeRotation($(this).val(), "Y") });
@@ -387,16 +347,25 @@ function initEventListeners() {
       scaleX: nextScale,
       scaleY: nextScale,
       scaleZ: nextScale,
-      lineColor: prev.lineColor,
-      surfaceColor: vec4(random(0, 1), random(0, 1), random(0, 1), 1.0)
+      surfaceColor: vec4(random(0, 1), random(0, 1), random(0, 1), 1.0),
+      materialAmbient: vec4(random(0, 1), random(0, 1), random(0, 1), 1.0),
+      materialDiffuse: materialDiffuse,
+      materialSpecular: materialSpecular,
+      materialShininess: random(0, 128)
     };
 
     $("#translate-x").val(currentObject.x);
     $("#translate-y").val(currentObject.y);
     $("#translate-z").val(currentObject.z);
-    $("#scale-x").val(currentObject.scaleX);
-    $("#scale-y").val(currentObject.scaleY);
-    $("#scale-z").val(currentObject.scaleZ);
+    $("#rotate-x").val(currentObject.rotateX);
+    $("#rotate-y").val(currentObject.rotateY);
+    $("#rotate-z").val(currentObject.rotateZ);
+    $("#scale").val(currentObject.scaleX);
+    $("#materialShininess").val(currentObject.materialShininess);
+    $("#surfaceColor").spectrum("set", toColorPicker(currentObject.surfaceColor));
+    $("#materialAmbient").spectrum("set", toColorPicker(currentObject.materialAmbient));
+    $("#materialDiffuse").spectrum("set", toColorPicker(currentObject.materialDiffuse));
+    $("#materialSpecular").spectrum("set", toColorPicker(currentObject.materialSpecular));
 
     numObjectsCreated++;
     currentObject.id = numObjectsCreated;
@@ -425,17 +394,29 @@ function initEventListeners() {
     $("#rotate-x").val(currentObject.rotateX);
     $("#rotate-y").val(currentObject.rotateY);
     $("#rotate-z").val(currentObject.rotateZ);
-    $("#scale-x").val(currentObject.scaleX);
-    $("#scale-y").val(currentObject.scaleY);
-    $("#scale-z").val(currentObject.scaleZ);
-    $("#z-depth").val(currentObject.z);
-    $("#surface-color").spectrum("set", toColorPicker(currentObject.surfaceColor));
-    $("#line-color").spectrum("set", toColorPicker(currentObject.lineColor));
+    $("#scale").val(currentObject.scaleX);
+    $("#materialShininess").val(currentObject.materialShininess);
+    $("#surfaceColor").spectrum("set", toColorPicker(currentObject.surfaceColor));
+    $("#materialAmbient").spectrum("set", toColorPicker(currentObject.materialAmbient));
+    $("#materialDiffuse").spectrum("set", toColorPicker(currentObject.materialDiffuse));
+    $("#materialSpecular").spectrum("set", toColorPicker(currentObject.materialSpecular));
 
     // Animate the selected object.
     animateSelectedObject(currentObject);
   });
 
+}
+
+function addColorPicker(elementId, objectProperty) {
+  $("#" + elementId).spectrum({
+    color: toColorPicker(currentObject[objectProperty]),
+    showPalette: true,
+    palette: getPalette(),
+    change: function(color) {
+      var rgb = color.toRgb();
+      currentObject[objectProperty] = vec4(rgb.r / 255, rgb.g / 255, rgb.b / 255, rgb.a);
+    }
+  });
 }
 
 function changeScale(scale, axis) {
@@ -450,19 +431,6 @@ function changeScale(scale, axis) {
 
 function changeTranslation(val, axis) {
   currentObject[axis] = val;
-}
-
-function changeLight(val, axis) {
-  lightPositions[axis] = val;
-  lightBulbs.x = - lightPositions[0];
-  lightBulbs.y = - lightPositions[1];
-  lightBulbs.z = - lightPositions[2];
-}
-
-function changeCameraX(angle) {
-  angle = radians(angle);
-  up[1] = Math.cos(angle);
-  up[2] = Math.sin(angle);
 }
 
 function changeCameraY(cameraAngleY) {
@@ -500,20 +468,20 @@ function objectName(object) {
 }
 
 function animateSelectedObject(object) {
-  var originalColor = object.lineColor;
+  var originalColor = object.surfaceColor;
   var white = vec4(1, 1, 1, 1)
   var counter = 0;
   var animation = window.setInterval(function() {
     counter++;
     if (counter % 2 == 0) {
-      object.lineColor = originalColor;
+      object.surfaceColor = originalColor;
     } else {
-      object.lineColor = white;
+      object.surfaceColor = white;
     }
   }, 100);
   window.setTimeout(function() {
     window.clearInterval(animation);
-    object.lineColor = originalColor;
+    object.surfaceColor = originalColor;
   }, 1500);
 
 }
@@ -538,3 +506,23 @@ function rotateObject(mouseEvent) {
   $("#rotate-x").val(currentObject.rotateX);
   $("#rotate-y").val(currentObject.rotateY);
 }
+
+function getPalette() {
+  return [
+    ["rgb(0, 0, 0)", "rgb(67, 67, 67)", "rgb(102, 102, 102)",
+      "rgb(204, 204, 204)", "rgb(217, 217, 217)","rgb(255, 255, 255)"],
+    ["rgb(152, 0, 0)", "rgb(255, 0, 0)", "rgb(255, 153, 0)", "rgb(255, 255, 0)", "rgb(0, 255, 0)",
+      "rgb(0, 255, 255)", "rgb(74, 134, 232)", "rgb(0, 0, 255)", "rgb(153, 0, 255)", "rgb(255, 0, 255)"],
+    ["rgb(230, 184, 175)", "rgb(244, 204, 204)", "rgb(252, 229, 205)", "rgb(255, 242, 204)", "rgb(217, 234, 211)",
+      "rgb(208, 224, 227)", "rgb(201, 218, 248)", "rgb(207, 226, 243)", "rgb(217, 210, 233)", "rgb(234, 209, 220)"],
+    ["rgb(221, 126, 107)", "rgb(234, 153, 153)", "rgb(249, 203, 156)", "rgb(255, 229, 153)", "rgb(182, 215, 168)",
+      "rgb(162, 196, 201)", "rgb(164, 194, 244)", "rgb(159, 197, 232)", "rgb(180, 167, 214)", "rgb(213, 166, 189)"],
+    ["rgb(204, 65, 37)", "rgb(224, 102, 102)", "rgb(246, 178, 107)", "rgb(255, 217, 102)", "rgb(147, 196, 125)",
+      "rgb(118, 165, 175)", "rgb(109, 158, 235)", "rgb(111, 168, 220)", "rgb(142, 124, 195)", "rgb(194, 123, 160)"],
+    ["rgb(166, 28, 0)", "rgb(204, 0, 0)", "rgb(230, 145, 56)", "rgb(241, 194, 50)", "rgb(106, 168, 79)",
+      "rgb(69, 129, 142)", "rgb(60, 120, 216)", "rgb(61, 133, 198)", "rgb(103, 78, 167)", "rgb(166, 77, 121)"],
+    ["rgb(91, 15, 0)", "rgb(102, 0, 0)", "rgb(120, 63, 4)", "rgb(127, 96, 0)", "rgb(39, 78, 19)",
+      "rgb(12, 52, 61)", "rgb(28, 69, 135)", "rgb(7, 55, 99)", "rgb(32, 18, 77)", "rgb(76, 17, 48)"]
+  ];
+}
+

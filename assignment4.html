@@ -42,7 +42,7 @@ uniform vec4 ambientProduct;
 uniform vec4 diffuseProduct;
 uniform vec4 specularProduct;
 uniform vec4 baseColor;
-uniform float shininess;
+uniform float materialShininess;
 uniform float constantAttenuation;
 uniform float linearAttenuation;
 uniform float quadraticAttenuation;
@@ -63,7 +63,7 @@ void main() {
     float Kd = max(dot(L[i], N), 0.0);
     vec4 diffuse = Kd * diffuseProduct;
 
-    float Ks = pow(max(dot(N, H), 0.0), shininess);
+    float Ks = pow(max(dot(N, H), 0.0), materialShininess);
     vec4  specular = Ks * specularProduct;
 
     if (dot(L[i], N) < 0.0) {
@@ -76,6 +76,7 @@ void main() {
   }
 
   fColor = fColor * baseColor;
+
   gl_FragColor = vec4(fColor.rgb, baseColor.a);
 }
 </script>
@@ -123,12 +124,25 @@ void main() {
     </select>
   </div>
   <div class="form-group">
-    <label for="surface-color">Surface color</label>
-    <input type="text" id="surface-color">
+    <label for="surfaceColor">Surface color</label>
+    <input type="text" id="surfaceColor">
   </div>
   <div class="form-group">
-    <label for="line-color">Line color</label>
-    <input type="text" id="line-color">
+    <label for="materialAmbient">Material ambient</label>
+    <input type="text" id="materialAmbient">
+  </div>
+  <div class="form-group">
+    <label for="materialDiffuse">Material diffuse</label>
+    <input type="text" id="materialDiffuse">
+  </div>
+  <div class="form-group">
+    <label for="materialDiffuse">Material specular</label>
+    <input type="text" id="materialSpecular">
+  </div>
+
+  <div class="form-group">
+    <label for="materialShininess">Material shininess</label>
+    <input type="range" class="slider" id="materialShininess" min="1" max="128" step="0.1" value="1">
   </div>
 
   <div class="form-group">
@@ -159,26 +173,6 @@ void main() {
   <div class="form-group">
     <label for="translate-z">Translate z</label>
     <input type="range" class="slider" id="translate-z" min="-1.0" max="1.0" step="0.001" value="0">
-  </div>
-  <div class="form-group">
-    <label for="light-x">Light x</label>
-    <input type="range" class="slider" id="light-x" min="-1.0" max="1.0" step="0.001" value="0">
-  </div>
-  <div class="form-group">
-    <label for="light-y">Light y</label>
-    <input type="range" class="slider" id="light-y" min="-1.0" max="1.0" step="0.001" value="0">
-  </div>
-  <div class="form-group">
-    <label for="light-z">Light z</label>
-    <input type="range" class="slider" id="light-z" min="-1.0" max="1.0" step="0.001" value="0">
-  </div>
-  <div class="form-group">
-    <label for="camera-angle-x">Camera up</label>
-    <input type="range" class="slider" id="camera-angle-x" min="0" max="360" step="1" value="0">
-  </div>
-  <div class="form-group">
-    <label for="camera-angle-y">Camera rotation</label>
-    <input type="range" class="slider" id="camera-angle-y" min="0" max="360" step="1" value="45">
   </div>
   <div class="form-group">
     <label for="constantAttenuation">Constant attenuation</label>
