@@ -14,6 +14,7 @@ uniform vec4 lightPosition[3];
 varying vec3 N;
 varying vec3 L[3];
 varying vec3 E;
+varying vec3 fPosition;
 
 void main() {
   vec3 pos = -(modelViewMatrix * vPosition).xyz;
@@ -34,7 +35,7 @@ void main() {
 
   </script>
 
-  <script id="fragment-shader" type="x-shader/x-fragment">
+    <script id="fragment-shader" type="x-shader/x-fragment">
 precision mediump float;
 
 uniform vec4 ambientProduct;
@@ -42,6 +43,9 @@ uniform vec4 diffuseProduct;
 uniform vec4 specularProduct;
 uniform vec4 baseColor;
 uniform float shininess;
+uniform float constantAttenuation;
+uniform float linearAttenuation;
+uniform float quadraticAttenuation;
 
 varying vec3 N;
 varying vec3 L[3];
@@ -55,8 +59,9 @@ void main() {
   for (int i = 0; i < 3; i++) {
     vec3 H = normalize(L[i] + E);
 
+    float distance = length(L[i] - E);
     float Kd = max(dot(L[i], N), 0.0);
-    vec4  diffuse = Kd * diffuseProduct;
+    vec4 diffuse = Kd * diffuseProduct;
 
     float Ks = pow(max(dot(N, H), 0.0), shininess);
     vec4  specular = Ks * specularProduct;
@@ -65,11 +70,13 @@ void main() {
       specular = vec4(0.0, 0.0, 0.0, 1.0);
     }
 
-    fColor = fColor + diffuse + specular;
+    float attenuation = 1.0 / (constantAttenuation + linearAttenuation * distance + (quadraticAttenuation * distance * distance));
+
+    fColor = fColor + attenuation * ambient + attenuation * diffuse + attenuation * specular;
   }
 
-  fColor = fColor + ambient;
-  gl_FragColor = vec4(baseColor.rgb * fColor.rgb, baseColor.a);
+  fColor = fColor * baseColor;
+  gl_FragColor = vec4(fColor.rgb, baseColor.a);
 }
 </script>
 
@@ -130,19 +137,6 @@ void main() {
   </div>
 
   <div class="form-group">
-    <label for="scale-x">Scale x</label>
-    <input type="range" class="slider" id="scale-x" min="0.01" max="1.0" step="0.01" value="0">
-  </div>
-  <div class="form-group">
-    <label for="scale-y">Scale y</label>
-    <input type="range" class="slider" id="scale-y" min="0.01" max="1.0" step="0.01" value="0">
-  </div>
-  <div class="form-group">
-    <label for="scale-z">Scale z</label>
-    <input type="range" class="slider" id="scale-z" min="0.01" max="1.0" step="0.01" value="0">
-  </div>
-
-  <div class="form-group">
     <label for="rotate-x">Rotate x</label>
     <input type="range" class="slider" id="rotate-x" min="0" max="360" step="1" value="0">
   </div>
@@ -185,6 +179,18 @@ void main() {
   <div class="form-group">
     <label for="camera-angle-y">Camera rotation</label>
     <input type="range" class="slider" id="camera-angle-y" min="0" max="360" step="1" value="45">
+  </div>
+  <div class="form-group">
+    <label for="constantAttenuation">Constant attenuation</label>
+    <input type="range" class="slider" id="constantAttenuation" min="0" max="2" step="0.01" value="0">
+  </div>
+  <div class="form-group">
+    <label for="linearAttenuation">Linear attenuation</label>
+    <input type="range" class="slider" id="linearAttenuation" min="0" max="2" step="0.01" value="0">
+  </div>
+  <div class="form-group">
+    <label for="quadraticAttenuation">Quadratic attenuation</label>
+    <input type="range" class="slider" id="quadraticAttenuation" min="0" max="2" step="0.01" value="0">
   </div>
 
   <div class="form-group">

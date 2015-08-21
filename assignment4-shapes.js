@@ -184,7 +184,7 @@ function createSphere(gl) {
 }
 
 function triangle(vertices, points, normals, a, b, c) {
-  var tesselationDepth = 5;
+  var tesselationDepth = 4;
   divideTriangles(points, normals, vertices[a], vertices[b], vertices[c], tesselationDepth);
 }
 
@@ -192,7 +192,7 @@ function divideTriangles(points, normals, a, b, c, depth) {
   if (depth == 0) {
     points.push(a, b, c);
     var normal = computeNormal(a, b, c);
-    normals.push(normal, normal, normal);
+    normals.push(vec3(a), vec3(b), vec3(c));
   } else {
     var ab = normalize(mix(a, b, 0.5), true);
     var ac = normalize(mix(a, c, 0.5), true);

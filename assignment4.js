@@ -32,10 +32,13 @@ var lightAmbient = vec4(0.4, 0.4, 0.4, 1.0 );
 var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
 var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 
-var materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
-var materialDiffuse = vec4( 1.0, 0.8, 0.0, 1.0);
-var materialSpecular = vec4( 0.7, 0.5, 0.5, 1.0 );
+var materialAmbient = vec4( 1.0, 1.0, 1.0, 1.0 );
+var materialDiffuse = vec4( 1.0, 1.0, 1.0, 1.0);
+var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 var materialShininess = 50.0;
+var constantAttenuation = 1.0;
+var linearAttenuation = 1.0;
+var quadraticAttenuation = 0.5;
 
 
 window.onload = function init() {
@@ -51,7 +54,6 @@ window.onload = function init() {
   gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
   gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
   gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
-  gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
 
   initShapes();
 
@@ -73,7 +75,7 @@ window.onload = function init() {
   fixedObjects.push(createArrow([0, 1, 0], [270, 0, 0], vec4(0, 1.0, 0, 1.0)));
   fixedObjects.push(createArrow([0, 0, 1], [180, 0, 0], vec4(0, 0, 1.0, 1.0)));
   createLightSource();
-  for (var i = 0; i < lightBulbs.length; i++) {
+  for (var i = 0; i < 3; i++) {
     fixedObjects.push(lightBulbs[i]);
   }
   render();
@@ -83,7 +85,7 @@ function moveLights() {
   for (var i = 0; i < lightAngles.length; i++) {
     for (var j = 0; j < 3; j++) {
       lightAngles[i][j] += random(0, 1);
-      lightPositions[i][j] = Math.sin(radians(lightAngles[i][j]));
+      lightPositions[i][j] = 3 * Math.sin(radians(lightAngles[i][j]));
     }
     lightBulbs[i].x = - lightPositions[i][0];
     lightBulbs[i].y = - lightPositions[i][1];
@@ -119,6 +121,10 @@ function renderObject(object) {
   var projection = mult(perspective(20, canvas.clientWidth / canvas.clientHeight, 1, 20), lookAt(eye, [0, 0, 0], up))
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "projectionMatrix"), false, flatten(projection));
 
+  gl.uniform1f(gl.getUniformLocation(program, "shininess"), materialShininess);
+  gl.uniform1f(gl.getUniformLocation(program, "constantAttenuation"), constantAttenuation);
+  gl.uniform1f(gl.getUniformLocation(program, "linearAttenuation"), linearAttenuation);
+  gl.uniform1f(gl.getUniformLocation(program, "quadraticAttenuation"), quadraticAttenuation);
 
   var shape = object.shape;
 
@@ -263,6 +269,9 @@ function getPalette() {
 }
 
 function initEventListeners() {
+  $("#constantAttenuation").val(constantAttenuation);
+  $("#linearAttenuation").val(linearAttenuation);
+  $("#quadraticAttenuation").val(quadraticAttenuation);
   $("#translate-x").val(0);
   $("#translate-y").val(0);
   $("#translate-z").val(0);
@@ -338,6 +347,12 @@ function initEventListeners() {
   $("#rotate-y").on("change", function() { changeRotation($(this).val(), "Y") });
   $("#rotate-z").on("change", function() { changeRotation($(this).val(), "Z") });
 
+  $("#constantAttenuation").on("input", function() { constantAttenuation = $(this).val(); });
+  $("#constantAttenuation").on("change", function() { constantAttenuation = $(this).val(); });
+  $("#linearAttenuation").on("input", function() { linearAttenuation = $(this).val(); });
+  $("#linearAttenuation").on("change", function() { linearAttenuation = $(this).val(); });
+  $("#quadraticAttenuation").on("input", function() { quadraticAttenuation = $(this).val(); });
+  $("#quadraticAttenuation").on("change", function() { quadraticAttenuation = $(this).val(); });
 
   $("#gl-canvas").mousedown(function(event) {
     mouseDown = true;
