@@ -196,6 +196,7 @@ function createLightSource() {
       materialShininess: 128
     }
   }
+
   return lightBulbs;
 }
 
@@ -307,6 +308,19 @@ function initEventListeners() {
   $("#linearAttenuation").on("change", function() { linearAttenuation = $(this).val(); });
   $("#quadraticAttenuation").on("input", function() { quadraticAttenuation = $(this).val(); });
   $("#quadraticAttenuation").on("change", function() { quadraticAttenuation = $(this).val(); });
+
+  $("#light0").click(function() {
+    if (this.checked) lightPositions[0][3] = 1;
+    else lightPositions[0][3] = 0;
+  });
+  $("#light1").click(function() {
+    if (this.checked) lightPositions[1][3] = 1;
+    else lightPositions[1][3] = 0;
+  });
+  $("#light2").click(function() {
+    if (this.checked) lightPositions[2][3] = 1;
+    else lightPositions[2][3] = 0;
+  });
 
   $("#gl-canvas").mousedown(function(event) {
     mouseDown = true;
