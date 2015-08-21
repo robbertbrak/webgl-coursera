@@ -240,8 +240,10 @@ function createCube(gl) {
 }
 
 function createLine(gl, a, b) {
-  var shape = { buffers: [] };
-  shape.buffers.push(createBuffer(gl, [a, b], gl.LINES, OUTLINE));
+  var shape = { buffers: [], normals: [] };
+  var normal = computeNormal(a, b, a);
+  shape.buffers.push(createBuffer(gl, [a, b], gl.LINES, SURFACE));
+  shape.normals.push(createNormalBuffer(gl, [normal, normal]));
   return shape;
 }
 

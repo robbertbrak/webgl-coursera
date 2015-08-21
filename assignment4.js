@@ -62,14 +62,7 @@ window.onload = function init() {
   currentObject.rotateZ = 45;
 
   initEventListeners();
-
-  var xAxis = createAxis(vec4(-1, 0, 0, 1.0), vec4(1, 0, 0, 1.0), vec4(1.0, 0, 0, 1.0));
-  var yAxis = createAxis(vec4(0, -1, 0, 1.0), vec4(0, 1, 0, 1.0), vec4(0, 1.0, 0, 1.0));
-  var zAxis = createAxis(vec4(0, 0, -1, 1.0), vec4(0, 0, 1, 1.0), vec4(0, 0, 1.0, 1.0));
-  fixedObjects.push(xAxis, yAxis, zAxis);
-  fixedObjects.push(createArrow([1, 0, 0], [0, 90, 0], vec4(1.0, 0, 0, 1.0)));
-  fixedObjects.push(createArrow([0, 1, 0], [270, 0, 0], vec4(0, 1.0, 0, 1.0)));
-  fixedObjects.push(createArrow([0, 0, 1], [180, 0, 0], vec4(0, 0, 1.0, 1.0)));
+  createAxes();
   createLightSource();
   for (var i = 0; i < 3; i++) {
     // fixedObjects.push(lightBulbs[i]);
@@ -166,6 +159,7 @@ function createAxis(a, b, color) {
     x: 0, y: 0, z: 0,
     rotateX: 0, rotateY: 0, rotateZ: 0,
     scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0,
+    surfaceColor: color,
     lineColor: color,
     materialAmbient: color,
     materialDiffuse: color,
@@ -452,6 +446,16 @@ function changeCameraY(cameraAngleY) {
 
 function changeRotation(val, axis) {
   currentObject["rotate" + axis] = val;
+}
+
+function createAxes() {
+  var xAxis = createAxis(vec4(-1, 0, 0, 1.0), vec4(1, 0, 0, 1.0), vec4(1.0, 0, 0, 1.0));
+  var yAxis = createAxis(vec4(0, -1, 0, 1.0), vec4(0, 1, 0, 1.0), vec4(0, 1.0, 0, 1.0));
+  var zAxis = createAxis(vec4(0, 0, -1, 1.0), vec4(0, 0, 1, 1.0), vec4(0, 0, 1.0, 1.0));
+  fixedObjects.push(xAxis, yAxis, zAxis);
+  fixedObjects.push(createArrow([1, 0, 0], [0, 90, 0], vec4(1.0, 0, 0, 1.0)));
+  fixedObjects.push(createArrow([0, 1, 0], [270, 0, 0], vec4(0, 1.0, 0, 1.0)));
+  fixedObjects.push(createArrow([0, 0, 1], [180, 0, 0], vec4(0, 0, 1.0, 1.0)));
 }
 
 function findObjectIndex(id) {
