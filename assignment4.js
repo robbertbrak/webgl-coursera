@@ -24,9 +24,8 @@ var cameraAngle = 0;
 var eye = [4.158247202848457, 2.375470056608669, 3.6147091459975838];
 var up = [0, 1, 0];
 
-var lightPositions = [ vec4(0, 0, 0, 1), vec4(1, 1, 1, 1), vec4(0.5, 0.5, 0.5, 1) ];
-var lightAngles = [ [0, 0, 0], [180, 0, 90], [60, 60, 60] ];
-var lightBulbs = [ [], [], [] ];
+var lights = [];
+var currentLight = {};
 
 var lightAmbient = vec4(0.4, 0.4, 0.4, 1.0 );
 var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
@@ -36,6 +35,7 @@ var materialAmbient = vec4( 1.0, 1.0, 1.0, 1.0 );
 var materialDiffuse = vec4( 0.8, 0.8, 0.8, 1.0);
 var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 var materialShininess = 50.0;
+
 var constantAttenuation = 1.0;
 var linearAttenuation = 1.0;
 var quadraticAttenuation = 0.5;
@@ -63,24 +63,9 @@ window.onload = function init() {
 
   initEventListeners();
   createAxes();
-  createLightSource();
-  for (var i = 0; i < 3; i++) {
-    // fixedObjects.push(lightBulbs[i]);
-  }
+  initLights();
   render();
 };
-
-function moveLights() {
-  for (var i = 0; i < lightAngles.length; i++) {
-    for (var j = 0; j < 3; j++) {
-      lightAngles[i][j] += random(0, 1);
-      lightPositions[i][j] = 5 * Math.sin(radians(lightAngles[i][j]));
-    }
-    lightBulbs[i].x = - lightPositions[i][0];
-    lightBulbs[i].y = - lightPositions[i][1];
-    lightBulbs[i].z = - lightPositions[i][2];
-  }
-}
 
 function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -88,7 +73,6 @@ function render() {
   cameraAngle += 0.05;
   changeCameraY(cameraAngle);
   moveLights();
-  gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPositions));
 
   for (var i = 0; i < fixedObjects.length; i++) {
     renderObject(fixedObjects[i]);
@@ -182,11 +166,17 @@ function createArrow(a, r, color) {
   };
 }
 
-function createLightSource() {
-  for (var i = 0; i < lightBulbs.length; i++) {
-    lightBulbs[i] = {
+function initLights() {
+  for (var i = 0; i < 4; i++) {
+    var light = {};
+    light.position = vec4(random(0, 3), random(0, 3), random(0, 3), 1);
+    light.angle = [0, 0, 0];
+    light.diffuse = vec4(1.0, 1.0, 1.0, 1.0);
+    light.specular = vec4(1.0, 1.0, 1.0, 1.0);
+    light.animate = true;
+    light.lightBulb = {
       shape: shapes["sphere"],
-      x: lightPositions[i][0], y: lightPositions[i][1], z: lightPositions[i][2],
+      x: light.position[0], y: light.position[1], z: light.position[2],
       rotateX: 0, rotateY: 0, rotateZ: 0,
       scaleX: 0.03, scaleY: 0.03, scaleZ: 0.03,
       surfaceColor: vec4(1, 1, 1, 1),
@@ -195,10 +185,35 @@ function createLightSource() {
       materialSpecular: materialSpecular,
       materialShininess: 128
     }
+
+    lights.push(light);
+  }
+  currentLight = lights[0];
+}
+
+function moveLights() {
+  for (var i = 0; i < lights.length; i++) {
+    if (!lights[i].animate) {
+      continue;
+    }
+    for (var j = 0; j < 3; j++) {
+      lights[i].angle[j] += random(0, 1);
+      lights[i].position[j] = 5 * Math.sin(radians(lights[i].angle[j]));
+    }
   }
 
-  return lightBulbs;
+  var lightPositions = [];
+  for (var i = 0; i < lights.length; i++) {
+    lightPositions.push(lights[i].position);
+  }
+
+  $("#lightX").val(currentLight.position[0]);
+  $("#lightY").val(currentLight.position[1]);
+  $("#lightZ").val(currentLight.position[2]);
+
+  gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPositions));
 }
+
 
 function initShapes() {
   var sphere = createSphere(gl);
@@ -309,18 +324,30 @@ function initEventListeners() {
   $("#quadraticAttenuation").on("input", function() { quadraticAttenuation = $(this).val(); });
   $("#quadraticAttenuation").on("change", function() { quadraticAttenuation = $(this).val(); });
 
-  $("#light0").click(function() {
-    if (this.checked) lightPositions[0][3] = 1;
-    else lightPositions[0][3] = 0;
+  $("#currentLight").change(function() {
+    currentLight = lights[$(this).val()];
+    $("#lightX").val(currentLight.position[0]);
+    $("#lightY").val(currentLight.position[1]);
+    $("#lightZ").val(currentLight.position[2]);
+    $("#lightOnOff").prop('checked', currentLight.position[3] == 1);
+    $("#lightAnimated").prop('checked', currentLight.animate);
   });
-  $("#light1").click(function() {
-    if (this.checked) lightPositions[1][3] = 1;
-    else lightPositions[1][3] = 0;
+
+  $("#lightOnOff").click(function() {
+    if (this.checked) currentLight.position[3] = 1;
+    else currentLight.position[3] = 0;
   });
-  $("#light2").click(function() {
-    if (this.checked) lightPositions[2][3] = 1;
-    else lightPositions[2][3] = 0;
+
+  $("#lightAnimated").click(function() {
+    currentLight.animate = this.checked;
   });
+
+  $("#lightX").on("input", function() { currentLight.position[0] = $(this).val(); });
+  $("#lightX").on("change", function() { currentLight.position[0] = $(this).val(); });
+  $("#lightY").on("input", function() { currentLight.position[1] = $(this).val(); });
+  $("#lightY").on("change", function() { currentLight.position[1] = $(this).val(); });
+  $("#lightZ").on("input", function() { currentLight.position[2] = $(this).val(); });
+  $("#lightZ").on("change", function() { currentLight.position[2] = $(this).val(); });
 
   $("#gl-canvas").mousedown(function(event) {
     mouseDown = true;

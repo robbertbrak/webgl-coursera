@@ -73,11 +73,11 @@ void main() {
 
       float attenuation = 1.0 / (constantAttenuation + linearAttenuation * distance + (quadraticAttenuation * distance * distance));
 
-      fColor = fColor + attenuation * ambient + attenuation * diffuse + attenuation * specular;
+      fColor = fColor + attenuation * diffuse + attenuation * specular;
     }
   }
 
-  fColor = fColor * baseColor;
+  fColor = fColor + ambient;
 
   gl_FragColor = vec4(fColor.rgb, baseColor.a);
 }
@@ -93,30 +93,36 @@ void main() {
   <link rel="stylesheet" href="common/spectrum.css" />
 
   <style type="text/css">
-    html, body { margin: 0; padding: 0; background-color: rgb(90, 90, 90); color: white; font-family: Arial, sans-serif; }
-    .form-group {  }
-    label { display: inline-block; width: 150px; vertical-align: middle; line-height: 2.3em; }
+    html, body { margin: 0; padding: 0; background-color: rgb(90, 90, 90); color: white;
+      font-family: Arial, sans-serif; font-size: 12px; }
+    .form-group { border: 1px solid white; padding: 3px; margin: 2px 0; }
+    .form-group h3 { margin: 0;  font-size: 14px; }
+    .form-element {  }
+    label { display: inline-block; width: 120px; vertical-align: middle; line-height: 2.3em; }
     input, select { display: inline-block; vertical-align: middle; line-height: 2.3em; }
-    .slider { width: 300px; }
-    .form { float: left; padding: 10px; }
+    input, select, button { font-size: 12px; }
+    .slider { width: 250px; }
+    .left-form { float: left; padding: 10px; min-width: 400px; max-width: 400px; }
     canvas { float: left; margin: 0; padding: 0; cursor: crosshair; }
     a { color: white; }
   </style>
 </head>
 
 <body>
-<div class="form" style="max-width: 500px">
-  <div class="form-group">
+<div class="left-form">
+  <h2>Objects</h2>
+
+  <div class="form-element">
     <label for="add-object">&nbsp;</label>
     <button id="add-object">Add object</button>
     <button id="remove-object">Remove object</button>
   </div>
-  <div class="form-group">
+  <div class="form-element">
     <label for="current-object">Current object:</label>
     <select id="current-object">
     </select>
   </div>
-  <div class="form-group">
+  <div class="form-element">
     <label for="shape">Shape</label>
     <select id="shape">
       <option value="sphere" selected="selected">Sphere</option>
@@ -126,84 +132,133 @@ void main() {
     </select>
   </div>
   <div class="form-group">
-    <label for="surfaceColor">Surface color</label>
-    <input type="text" id="surfaceColor">
-  </div>
-  <div class="form-group">
-    <label for="materialAmbient">Material ambient</label>
-    <input type="text" id="materialAmbient">
-  </div>
-  <div class="form-group">
-    <label for="materialDiffuse">Material diffuse</label>
-    <input type="text" id="materialDiffuse">
-  </div>
-  <div class="form-group">
-    <label for="materialDiffuse">Material specular</label>
-    <input type="text" id="materialSpecular">
+    <h3>Material properties</h3>
+    <div class="form-element">
+      <label for="surfaceColor">Surface color</label>
+      <input type="text" id="surfaceColor">
+    </div>
+    <div class="form-element">
+      <label for="materialAmbient">Material ambient</label>
+      <input type="text" id="materialAmbient">
+    </div>
+    <div class="form-element">
+      <label for="materialDiffuse">Material diffuse</label>
+      <input type="text" id="materialDiffuse">
+    </div>
+    <div class="form-element">
+      <label for="materialDiffuse">Material specular</label>
+      <input type="text" id="materialSpecular">
+    </div>
+
+    <div class="form-element">
+      <label for="materialShininess">Material shininess</label>
+      <input type="range" class="slider" id="materialShininess" min="1" max="128" step="0.1" value="1">
+    </div>
   </div>
 
   <div class="form-group">
-    <label for="materialShininess">Material shininess</label>
-    <input type="range" class="slider" id="materialShininess" min="1" max="128" step="0.1" value="1">
+    <h3>Scale</h3>
+    <div class="form-element">
+      <label for="scale">Scale</label>
+      <input type="range" class="slider" id="scale" min="0.01" max="1.0" step="0.01" value="0">
+    </div>
   </div>
 
   <div class="form-group">
-    <label for="scale">Scale</label>
-    <input type="range" class="slider" id="scale" min="0.01" max="1.0" step="0.01" value="0">
+    <h3>Rotation</h3>
+    <div class="form-element">
+      <label for="rotate-x">Rotate x</label>
+      <input type="range" class="slider" id="rotate-x" min="0" max="360" step="1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="rotate-y">Rotate y</label>
+      <input type="range" class="slider" id="rotate-y" min="0" max="360" step="1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="rotate-z">Rotate z</label>
+      <input type="range" class="slider" id="rotate-z" min="0" max="360" step="1" value="0">
+    </div>
   </div>
 
   <div class="form-group">
-    <label for="rotate-x">Rotate x</label>
-    <input type="range" class="slider" id="rotate-x" min="0" max="360" step="1" value="0">
+    <h3>Translation</h3>
+    <div class="form-element">
+      <label for="translate-x">Translate x</label>
+      <input type="range" class="slider" id="translate-x" min="-1.0" max="1.0" step="0.001" value="0">
+    </div>
+    <div class="form-element">
+      <label for="translate-y">Translate y</label>
+      <input type="range" class="slider" id="translate-y" min="-1.0" max="1.0" step="0.001" value="0">
+    </div>
+    <div class="form-element">
+      <label for="translate-z">Translate z</label>
+      <input type="range" class="slider" id="translate-z" min="-1.0" max="1.0" step="0.001" value="0">
+    </div>
   </div>
+
+</div>
+
+<canvas id="gl-canvas" width="700" height="700">
+  Oops ... your browser doesn"t support the HTML5 canvas element
+</canvas>
+
+<div class="left-form">
+
+  <h2>Lighting</h2>
+
   <div class="form-group">
-    <label for="rotate-y">Rotate y</label>
-    <input type="range" class="slider" id="rotate-y" min="0" max="360" step="1" value="0">
+    <h3>Distance attenuation</h3>
+    <div class="form-element">
+      <label for="constantAttenuation">Constant attenuation</label>
+      <input type="range" class="slider" id="constantAttenuation" min="0" max="2" step="0.01" value="0">
+    </div>
+    <div class="form-element">
+      <label for="linearAttenuation">Linear attenuation</label>
+      <input type="range" class="slider" id="linearAttenuation" min="0" max="2" step="0.01" value="0">
+    </div>
+    <div class="form-element">
+      <label for="quadraticAttenuation">Quadratic attenuation</label>
+      <input type="range" class="slider" id="quadraticAttenuation" min="0" max="2" step="0.01" value="0">
+    </div>
   </div>
-  <div class="form-group">
-    <label for="rotate-z">Rotate z</label>
-    <input type="range" class="slider" id="rotate-z" min="0" max="360" step="1" value="0">
+
+  <div class="form-element">
+    <label for="currentLight">Current light:</label>
+    <select id="currentLight">
+      <option value="0">Light 1</option>
+      <option value="1">Light 2</option>
+      <option value="2">Light 3</option>
+      <option value="3">Light 4</option>
+    </select>
   </div>
-  <div class="form-group">
-    <label for="translate-x">Translate x</label>
-    <input type="range" class="slider" id="translate-x" min="-1.0" max="1.0" step="0.001" value="0">
+
+  <div class="form-element">
+    <label for="lightOnOff">Enabled</label>
+    <input type="checkbox" id="lightOnOff" checked>
   </div>
-  <div class="form-group">
-    <label for="translate-y">Translate y</label>
-    <input type="range" class="slider" id="translate-y" min="-1.0" max="1.0" step="0.001" value="0">
-  </div>
-  <div class="form-group">
-    <label for="translate-z">Translate z</label>
-    <input type="range" class="slider" id="translate-z" min="-1.0" max="1.0" step="0.001" value="0">
+
+  <div class="form-element">
+    <label for="lightAnimated">Animate</label>
+    <input type="checkbox" id="lightAnimated" checked>
   </div>
 
   <div class="form-group">
-    <label for="light0">Light 1</label>
-    <input type="checkbox" id="light0" checked>
-  </div>
-  <div class="form-group">
-    <label for="light1">Light 2</label>
-    <input type="checkbox" id="light1" checked>
-  </div>
-  <div class="form-group">
-    <label for="light2">Light 3</label>
-    <input type="checkbox" id="light2" checked>
-  </div>
-
-  <div class="form-group">
-    <label for="constantAttenuation">Constant attenuation</label>
-    <input type="range" class="slider" id="constantAttenuation" min="0" max="2" step="0.01" value="0">
-  </div>
-  <div class="form-group">
-    <label for="linearAttenuation">Linear attenuation</label>
-    <input type="range" class="slider" id="linearAttenuation" min="0" max="2" step="0.01" value="0">
-  </div>
-  <div class="form-group">
-    <label for="quadraticAttenuation">Quadratic attenuation</label>
-    <input type="range" class="slider" id="quadraticAttenuation" min="0" max="2" step="0.01" value="0">
+    <h3>Light position</h3>
+    <div class="form-element">
+      <label for="lightX">x</label>
+      <input type="range" class="slider" id="lightX" min="-10.0" max="10.0" step="0.01" value="0">
+    </div>
+    <div class="form-element">
+      <label for="lightY">y</label>
+      <input type="range" class="slider" id="lightY" min="-10.0" max="10.0" step="0.01" value="0">
+    </div>
+    <div class="form-element">
+      <label for="lightZ">z</label>
+      <input type="range" class="slider" id="lightZ" min="-10.0" max="10.0" step="0.01" value="0">
+    </div>
   </div>
 
-  <div class="form-group">
+  <div class="form-element">
     <h2>Instructions</h2>
     <p>
       Click 'Add object' to add an object to the canvas, then use the menu options to change its properties.
@@ -221,11 +276,10 @@ void main() {
     Tested in Chrome and Firefox.<br>
     Color picker: <a href="https://bgrins.github.io/spectrum/">https://bgrins.github.io/spectrum/</a>
   </div>
+
+
 </div>
 
-<canvas id="gl-canvas" width="800" height="800">
-  Oops ... your browser doesn"t support the HTML5 canvas element
-</canvas>
 
 </body>
 </html>
