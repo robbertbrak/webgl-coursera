@@ -19,8 +19,10 @@ var mouseDown = false;
 var modelViewMatrixLoc;
 
 var shapes = {};
-var cameraRadius = 6;
-var cameraAngle = 0;
+var camera = {};
+camera.radius = 6;
+camera.angle = 45;
+camera.animated = true;
 var eye = [4.158247202848457, 2.375470056608669, 3.6147091459975838];
 var up = [0, 1, 0];
 
@@ -39,7 +41,6 @@ var materialShininess = 50.0;
 var constantAttenuation = 1.0;
 var linearAttenuation = 1.0;
 var quadraticAttenuation = 1.0;
-
 
 window.onload = function init() {
   initGlProgram();
@@ -77,8 +78,14 @@ window.onload = function init() {
 function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  cameraAngle += 0.05;
-  changeCameraY(cameraAngle);
+  console.log(camera.angle);
+
+  if (camera.animated) {
+    camera.angle += 0.05;
+    camera.angle %= 360;
+    $("#cameraAngleY").val(camera.angle);
+  }
+  changeCameraY();
   moveLights();
 
   for (var i = 0; i < fixedObjects.length; i++) {
@@ -191,7 +198,7 @@ function initLights() {
       materialDiffuse: materialDiffuse,
       materialSpecular: materialSpecular,
       materialShininess: 128
-    }
+    };
 
     lights.push(light);
   }
@@ -331,6 +338,10 @@ function initEventListeners() {
   $("#rotate-y").on("change", function() { changeRotation($(this).val(), "Y") });
   $("#rotate-z").on("change", function() { changeRotation($(this).val(), "Z") });
 
+  $("#cameraAngleY").on("input", function() { camera.angle = $(this).val() });
+  $("#cameraAngleY").on("change", function() { camera.angle = $(this).val() });
+  $("#cameraAnimated").click(function() { camera.animated = this.checked; });
+
   $("#constantAttenuation").on("input", function() { constantAttenuation = $(this).val(); });
   $("#constantAttenuation").on("change", function() { constantAttenuation = $(this).val(); });
   $("#linearAttenuation").on("input", function() { linearAttenuation = $(this).val(); });
@@ -348,9 +359,7 @@ function initEventListeners() {
     else currentLight.position[3] = 0;
   });
 
-  $("#lightAnimated").click(function() {
-    currentLight.animate = this.checked;
-  });
+  $("#lightAnimated").click(function() { currentLight.animate = this.checked; });
 
   $("#lightX").on("input", function() { currentLight.position[0] = $(this).val(); });
   $("#lightX").on("change", function() { currentLight.position[0] = $(this).val(); });
@@ -365,7 +374,7 @@ function initEventListeners() {
       moveObject(event);
     }
   });
-  $("#gl-canvas").mouseup(function(event) { mouseDown=false; });
+  $("#gl-canvas").mouseup(function() { mouseDown=false; });
   $("#gl-canvas").mousemove(function(event) {
     if (mouseDown) {
       if (!event.ctrlKey) {
@@ -387,7 +396,7 @@ function initEventListeners() {
         $("#current-object").val(objects[objects.length - 1].id).change();
       }
     }
-  })
+  });
 
   $("#current-object").change(function() {
     currentObject = objects[findObjectIndex($(this).val())];
@@ -419,7 +428,7 @@ function changeCurrentLight() {
 function changeShape(shape) {
   currentObject.shapeName = shape;
   currentObject.shape = shapes[currentObject.shapeName];
-  $("#current-object option:selected").text(objectName(currentObject));
+  $("#current-object option:selected").text(objectName());
 }
 
 function addObject() {
@@ -464,7 +473,7 @@ function addObject() {
   objects.push(currentObject);
   $("#current-object").append($("<option></option>")
       .attr("value", currentObject.id)
-      .text(objectName(currentObject)));
+      .text(objectName()));
   $("#current-object").val(currentObject.id);
 }
 
@@ -494,13 +503,11 @@ function changeTranslation(val, axis) {
   currentObject[axis] = val;
 }
 
-function changeCameraY(cameraAngleY) {
-  var r = cameraRadius;
-  var x = eye[0];
+function changeCameraY() {
+  var r = camera.radius;
   var y = eye[1];
-  var z = eye[2];
-  var sin = Math.sin(radians(cameraAngleY));
-  var cos = Math.cos(radians(cameraAngleY));
+  var sin = Math.sin(radians(camera.angle));
+  var cos = Math.cos(radians(camera.angle));
   var h = Math.sqrt((r * r - y * y));
   eye[0] = h * cos;
   eye[1] = y;
@@ -534,14 +541,14 @@ function findObjectIndex(id) {
   return -1;
 }
 
-function objectName(object) {
+function objectName() {
   return "object " + currentObject.id + ": " + currentObject.shapeName;
 }
 
 function animateSelectedObject(object) {
   var property = "materialAmbient";
   var originalColor = object[property];
-  var white = vec4(1, 1, 1, 1)
+  var white = vec4(1, 1, 1, 1);
   var counter = 0;
   var animation = window.setInterval(function() {
     counter++;
