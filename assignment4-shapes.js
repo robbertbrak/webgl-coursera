@@ -4,8 +4,6 @@ function createCone(gl) {
   // For a cone: create a 2D unit circle.
   // Create a triangle fan for the disc.
   // Create another triangle fan for the cone itself.
-  // Create a line loop for the outline of the disc.
-  // Create lines for the spokes of the disc and the spokes of the cone.
 
   var shape = { buffers: [], normals: [] };
   var circle = createCircle();
@@ -33,13 +31,13 @@ function createCone(gl) {
   }
 
   for (var i = 0; i < disc.length; i += 3) {
-    var normal = computeNormal(disc[i], disc[i+1], disc[i+2]);
+    var normal = computeNormal(disc[i], disc[i+2], disc[i+1]);
     discNormal.push(normal);
     discNormal.push(normal);
     discNormal.push(normal);
   }
   for (var i = 0; i < cone.length; i += 3) {
-    var normal = computeNormal(cone[i], cone[i+1], cone[i+2]);
+    var normal = computeNormal(cone[i], cone[i+2], cone[i+1]);
     coneNormal.push(normal);
     coneNormal.push(normal);
     coneNormal.push(normal);
@@ -64,9 +62,6 @@ function createCylinder(gl) {
   // First, create a 2D unit circle.
   // We use a triangle fan for each of discs.
   // We use a triangle strip for the tube.
-  // We use a line loop for the outline of the circle
-  // We use lines for the spokes of the discs.
-  // We use lines for the links between the discs.
 
   var shape = { buffers: [], normals: [] };
   var circle = createCircle();
@@ -78,7 +73,6 @@ function createCylinder(gl) {
   for (var j = 0; j < z.length; j++) {
     var disc = [];
     var discNormal = []
-    var lineloop = [];
 
     var center = vec4(0, 0, z[j], 1.0);
 
@@ -87,14 +81,11 @@ function createCylinder(gl) {
       disc.push(center);
       disc.push(vec4(circle[(i+1) % circle.length][0], circle[(i+1) % circle.length][1], z[j], 1.0));
       disc.push(edge);
-
-      //lineloop.push(edge);
-      //lines.push(center, edge); // spoke
     }
 
     for (var i = 0; i < disc.length; i += 3) {
       var normal;
-      if (j == 0) {
+      if (j == 1) {
         normal = computeNormal(disc[i], disc[i+1], disc[i+2]);
       } else {
         normal = computeNormal(disc[i], disc[i+2], disc[i+1]);
@@ -116,9 +107,8 @@ function createCylinder(gl) {
     var bottom = vec4(circle[i][0], circle[i][1], z[1], 1.0);
     var bottom2 = vec4(circle[(i+1) % circle.length][0], circle[(i+1) % circle.length][1], z[1], 1.0);
     tube.push(top, bottom, bottom2, top, bottom2, top2);
-    var normal = computeNormal(top, bottom2, bottom);
+    var normal = computeNormal(bottom, bottom2, top);
     tubeNormal.push(normal, normal, normal, normal, normal, normal);
-    //lines.push(top, bottom); // links between discs
   }
 
   shape.buffers.push(createBuffer(gl, tube, gl.TRIANGLES, SURFACE));
@@ -224,7 +214,7 @@ function createCube(gl) {
   for (var i = 0; i < quads.length; i++) {
     var quad = quads[i];
     var indices = [ quad[0], quad[1], quad[2], quad[0], quad[2], quad[3] ];
-    var normal = computeNormal(vertices[indices[0]], vertices[indices[2]], vertices[indices[1]]);
+    var normal = computeNormal(vertices[indices[0]], vertices[indices[1]], vertices[indices[2]]);
     for (var j = 0; j < indices.length; j++) {
       triangles.push(vertices[indices[j]]);
       normals.push(normal);
