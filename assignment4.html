@@ -61,10 +61,10 @@ void main() {
       vec3 H = normalize(L[i].xyz + E);
 
       float distance = length(L[i].xyz - E);
-      float Kd = max(dot(L[i].xyz, N), -0.1);
+      float Kd = max(dot(L[i].xyz, N), 0.0);
       vec4 diffuse = Kd * diffuseProduct;
 
-      float Ks = pow(max(dot(N, H), -0.1), materialShininess);
+      float Ks = pow(max(dot(N, H), 0.0), materialShininess);
       vec4  specular = Ks * specularProduct;
 
       if (dot(L[i].xyz, N) < 0.0) {
@@ -102,7 +102,7 @@ void main() {
     input, select { display: inline-block; vertical-align: middle; line-height: 2.3em; }
     input, select, button { font-size: 12px; }
     .slider { width: 250px; }
-    .left-form { float: left; padding: 10px; min-width: 400px; max-width: 400px; }
+    .left-form { float: left; padding: 10px; min-width: 420px; max-width: 420px; }
     canvas { float: left; margin: 0; padding: 0; cursor: crosshair; }
     a { color: white; }
   </style>

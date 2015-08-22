@@ -196,7 +196,7 @@ function initLights() {
     lights.push(light);
   }
   lights[0].position[3] = 1;
-  lights[0].angle = [45, 45, 45];
+  lights[0].angle = [45, 90, 270];
   lights[0].animate = true;
 
   lights[1].position[3] = 1;

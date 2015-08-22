@@ -174,7 +174,7 @@ function createSphere(gl) {
 }
 
 function triangle(vertices, points, normals, a, b, c) {
-  var tesselationDepth = 4;
+  var tesselationDepth = 5;
   divideTriangles(points, normals, vertices[a], vertices[b], vertices[c], tesselationDepth);
 }
 
