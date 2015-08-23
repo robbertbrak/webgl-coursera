@@ -16,6 +16,8 @@ var autorotateY = true;
 var EARTH_TEXTURE = 0;
 var CHECKERBOARD_TEXTURE = 1;
 
+var textureMappings = [REGULAR_MAPPING, TYPE1_MAPPING, TYPE2_MAPPING, TYPE3_MAPPING];
+
 var modelViewMatrixLoc;
 
 var shapes = {};
@@ -29,7 +31,7 @@ window.onload = function init() {
   loadTexture("earth", EARTH_TEXTURE);
   createCheckerboard();
   objects.push({
-    shape: shapes.sphere,
+    shape: shapes.sphere[REGULAR_MAPPING],
     texture: EARTH_TEXTURE,
     scale: 0.7,
     x: -0, y: 0, z: 0,
@@ -84,10 +86,15 @@ function renderObject(object) {
 }
 
 function initShapes() {
-  var sphere = createSphere(gl);
   shapes = {
-    "sphere": sphere
+    "sphere": {}
   };
+
+  for (var i = 0; i < textureMappings.length; i++) {
+    var sphere = createSphere(gl, textureMappings[i]);
+    shapes.sphere[textureMappings[i]] = sphere;
+  }
+
 }
 
 function getRotationMatrix(x, y, z) {
@@ -99,7 +106,7 @@ function getTranslationMatrix(x, y, z) {
 }
 
 function getScaleMatrix(x, y, z) {
-  return scale(x, y, z);
+  return scalem(x, y, z);
 }
 
 function random(min, max) {
@@ -146,6 +153,8 @@ function setupTexture(i, options) {
   gl.generateMipmap(gl.TEXTURE_2D);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
 
   if (!gl.isTexture(textures[i])) {
     console.error("Error: Texture is invalid");
@@ -179,6 +188,7 @@ function createCheckerboard() {
 
 function initEventListeners() {
   $("#texture").change(function() { currentObject.texture = $(this).val(); });
+  $("#textureMapping").change(function() { currentObject.shape = shapes.sphere[$(this).val()]; });
   $("#rotateX").on("input", function() { changeRotation($(this).val(), "X") });
   $("#rotateY").on("input", function() { changeRotation($(this).val(), "Y") });
   $("#rotateZ").on("input", function() { changeRotation($(this).val(), "Z") });

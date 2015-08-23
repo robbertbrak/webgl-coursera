@@ -1,6 +1,11 @@
 "use strict";
 
-function createSphere(gl) {
+var REGULAR_MAPPING = 0;
+var TYPE1_MAPPING = 1;
+var TYPE2_MAPPING = 2;
+var TYPE3_MAPPING = 3;
+
+function createSphere(gl, typeOfMapping) {
   var latitudeBands = 30;
   var longitudeBands = 30;
   var points = [];
@@ -24,10 +29,21 @@ function createSphere(gl) {
       var y = cosTheta;
       var z = sinPhi * sinTheta;
 
-      var tx1 = (phi + Math.PI) / (2 * Math.PI);
-      var ty1 = - theta / Math.PI;
 
-      texCoords1.push(vec2(tx1, ty1));
+      if (typeOfMapping == REGULAR_MAPPING) {
+        var tx = (phi + Math.PI) / (2 * Math.PI);
+        var ty = -theta / Math.PI;
+        texCoords1.push(vec2(tx, ty));
+      } else if (typeOfMapping == TYPE1_MAPPING) {
+        texCoords1.push(vec2((x + 1.0) / 2, (y + 1.0) / 2));
+      } else if (typeOfMapping == TYPE2_MAPPING) {
+        var tx = (phi + Math.PI) / (2 * Math.PI);
+        texCoords1.push(vec2(tx, (y + 1.0) / 2));
+      } else if (typeOfMapping == TYPE3_MAPPING) {
+        var tx = Math.random();
+        var ty = Math.random();
+        texCoords1.push(vec2(tx, ty));
+      }
       normals1.push(vec3(x, y, z));
       points1.push(vec4(x, y, z, 1.0));
     }
