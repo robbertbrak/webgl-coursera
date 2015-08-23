@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <script id="vertex-shader" type="x-shader/x-vertex">
+
+attribute vec4 vPosition;
+attribute vec2 vTextureCoord;
+
+uniform mat4 modelViewMatrix;
+
+varying vec2 fTextureCoord;
+
+void main() {
+  gl_Position = modelViewMatrix * vPosition;
+  fTextureCoord = vTextureCoord;
+}
+
+  </script>
+
+  <script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+uniform sampler2D uSampler;
+
+varying vec2 fTextureCoord;
+
+void main() {
+  gl_FragColor = texture2D(uSampler, vec2(fTextureCoord.st));
+}
+</script>
+
+  <script type="text/javascript" src="common/webgl-utils.js"></script>
+  <script type="text/javascript" src="common/initShaders.js"></script>
+  <script type="text/javascript" src="common/MV.js"></script>
+  <script type="text/javascript" src="assignment5-shapes.js"></script>
+  <script type="text/javascript" src="assignment5.js"></script>
+  <script type="text/javascript" src="common/jquery-1.11.3.min.js"></script>
+
+  <style type="text/css">
+    html, body { margin: 0; padding: 0; background-color: rgb(90, 90, 90); color: white;
+      font-family: Arial, sans-serif; font-size: 12px; }
+    .form-group { border: 1px solid white; padding: 3px; margin: 2px 0; }
+    .form-group h3 { margin: 0;  font-size: 14px; }
+    .form-element {  }
+    label { display: inline-block; width: 120px; vertical-align: middle; line-height: 2.3em; }
+    input, select { display: inline-block; vertical-align: middle; line-height: 2.3em; }
+    input, select, button { font-size: 12px; }
+    .slider { width: 250px; }
+    .left-form { float: left; padding: 10px; min-width: 420px; max-width: 420px; }
+    canvas { float: left; margin: 0; padding: 0; cursor: crosshair; }
+    a { color: white; }
+  </style>
+</head>
+
+<body>
+<div class="left-form">
+  <h2>Objects</h2>
+
+  <div class="form-group">
+    <h3>Rotation</h3>
+    <div class="form-element">
+      <label for="rotateX">Rotate x</label>
+      <input type="range" class="slider" id="rotateX" min="0" max="360" step="1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="rotateY">Rotate y</label>
+      <input type="range" class="slider" id="rotateY" min="0" max="360" step="1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="rotateZ">Rotate z</label>
+      <input type="range" class="slider" id="rotateZ" min="0" max="360" step="1" value="0">
+    </div>
+  </div>
+
+</div>
+
+<canvas id="gl-canvas" width="800" height="800">
+  Oops ... your browser doesn"t support the HTML5 canvas element
+</canvas>
+<img id="earth-image" src="http://1.bp.blogspot.com/-UUXaK5GCj-k/UcsKJRMgkVI/AAAAAAAACfM/sePP_H08JTQ/s1600/1.jpg" crossorigin="anonymous" >
+
+</body>
+</html>
