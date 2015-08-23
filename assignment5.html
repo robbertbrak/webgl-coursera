@@ -50,6 +50,7 @@ void main() {
     .left-form { float: left; padding: 10px; min-width: 420px; max-width: 420px; }
     canvas { float: left; margin: 0; padding: 0; cursor: crosshair; }
     a { color: white; }
+    img { display: none; }
   </style>
 </head>
 
@@ -57,8 +58,21 @@ void main() {
 <div class="left-form">
   <h2>Objects</h2>
 
+  <div class="form-element">
+    <label for="texture">Texture</label>
+    <select id="texture">
+      <option value="0"  selected="selected">Earth</option>
+      <option value="1">Checkerboard pattern</option>
+    </select>
+  </div>
+
   <div class="form-group">
+
     <h3>Rotation</h3>
+    <div class="form-element">
+      <label for="autorotateY">Animate y-axis</label>
+      <input type="checkbox" id="autorotateY" checked>
+    </div>
     <div class="form-element">
       <label for="rotateX">Rotate x</label>
       <input type="range" class="slider" id="rotateX" min="0" max="360" step="1" value="0">
@@ -78,7 +92,7 @@ void main() {
 <canvas id="gl-canvas" width="800" height="800">
   Oops ... your browser doesn"t support the HTML5 canvas element
 </canvas>
-<img id="earth-image" src="http://1.bp.blogspot.com/-UUXaK5GCj-k/UcsKJRMgkVI/AAAAAAAACfM/sePP_H08JTQ/s1600/1.jpg" crossorigin="anonymous" >
+<img id="earth" src="images/earth-highres.jpg">
 
 </body>
 </html>

@@ -11,8 +11,10 @@ var objects = [];
 var textures = [];
 var textureImages = [];
 var currentObject = {};
+var autorotateY = true;
 
 var EARTH_TEXTURE = 0;
+var CHECKERBOARD_TEXTURE = 1;
 
 var modelViewMatrixLoc;
 
@@ -24,23 +26,28 @@ window.onload = function init() {
   modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
 
   initShapes();
-  initEventListeners();
-
-  loadTexture("earth-image", EARTH_TEXTURE);
+  loadTexture("earth", EARTH_TEXTURE);
+  createCheckerboard();
   objects.push({
     shape: shapes.sphere,
     texture: EARTH_TEXTURE,
-    scale: 0.5,
+    scale: 0.7,
     x: -0, y: 0, z: 0,
-    rotateX: 0, rotateY: 0, rotateZ: 0
+    rotateX: 25, rotateY: 270, rotateZ: 0
   });
   currentObject = objects[0];
 
+  initEventListeners();
   render();
 };
 
 function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  if (autorotateY) {
+    $("#rotateY").val(currentObject.rotateY);
+    changeRotation((currentObject.rotateY + 1) % 360, "Y");
+  }
 
   for (var i = 0; i < objects.length; i++) {
     renderObject(objects[i]);
@@ -121,33 +128,71 @@ function initGlProgram() {
 }
 
 function loadTexture(id, i) {
-  textureImages[i] = document.getElementById("earth-image");
+  textureImages[i] = document.getElementById(id);
   setupTexture(i);
 }
 
-function setupTexture(i) {
+function setupTexture(i, options) {
+  options = options || {};
   gl.activeTexture(gl.TEXTURE0 + i);
   textures[i] = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, textures[i]);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureImages[i]);
+  if (options.texSize) {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, options.texSize, options.texSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, textureImages[i]);
+  } else {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureImages[i]);
+  }
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
   if (!gl.isTexture(textures[i])) {
     console.error("Error: Texture is invalid");
   }
 }
 
+function createCheckerboard() {
+  var texSize = 1024;
+  var numChecks = 16;
+  var image = new Uint8Array(4*texSize*texSize);
+  var c = 0;
+
+  // Create a checkerboard pattern
+  for ( var i = 0; i < texSize; i++ ) {
+    for ( var j = 0; j <texSize; j++ ) {
+      var patchx = Math.floor(i/(texSize/numChecks));
+      var patchy = Math.floor(j/(texSize/numChecks));
+      if (patchx % 2 ^ patchy % 2) c = 255;
+      else c = 0;
+      //c = 255*(((i & 0x8) == 0) ^ ((j & 0x8)  == 0))
+      image[4*i*texSize+4*j] = c;
+      image[4*i*texSize+4*j+1] = c;
+      image[4*i*texSize+4*j+2] = c;
+      image[4*i*texSize+4*j+3] = 255;
+    }
+  }
+
+  textureImages[CHECKERBOARD_TEXTURE] = image;
+  setupTexture(CHECKERBOARD_TEXTURE, { texSize: 1024 });
+}
+
 function initEventListeners() {
+  $("#texture").change(function() { currentObject.texture = $(this).val(); });
   $("#rotateX").on("input", function() { changeRotation($(this).val(), "X") });
   $("#rotateY").on("input", function() { changeRotation($(this).val(), "Y") });
   $("#rotateZ").on("input", function() { changeRotation($(this).val(), "Z") });
   $("#rotateX").on("change", function() { changeRotation($(this).val(), "X") });
   $("#rotateY").on("change", function() { changeRotation($(this).val(), "Y") });
   $("#rotateZ").on("change", function() { changeRotation($(this).val(), "Z") });
+  $("#autorotateY").click(function() {
+    autorotateY = this.checked;
+    $("#rotateY").prop("disabled", this.checked);
+  });
+
+  $("#rotateX").val(currentObject.rotateX);
+  $("#rotateY").val(currentObject.rotateY);
+  $("#rotateZ").val(currentObject.rotateZ);
 }
 
 function changeRotation(val, axis) {

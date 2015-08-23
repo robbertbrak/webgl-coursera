@@ -1,71 +1,55 @@
 "use strict";
 
 function createSphere(gl) {
-  var x = 0.525731112119133606;
-  var z = 0.850650808352039932;
-
-  var vertices = [
-    vec4(-x, 0.0, z, 1.0), vec4(x, 0.0, z, 1.0), vec4(-x, 0.0, -z, 1.0), vec4(x, 0.0, -z, 1.0),
-    vec4(0.0, z, x, 1.0), vec4(0.0, z, -x, 1.0), vec4(0.0, -z, x, 1.0), vec4(0.0, -z, -x, 1.0),
-    vec4(z, x, 0.0, 1.0), vec4(-z, x, 0.0, 1.0), vec4(z, -x, 0.0, 1.0), vec4(-z, -x, 0.0, 1.0)
-  ];
-
-
-  // A sphere is a icosahedron where each of the triangles is subdivided
-  // and the vertices normalized (so they are pushed outwards towards the sphere surface).
+  var latitudeBands = 30;
+  var longitudeBands = 30;
   var points = [];
+  var points1 = [];
   var normals = [];
+  var normals1 = [];
   var texCoords = [];
-  triangle(vertices, points, normals, texCoords, 0, 4, 1);
-  triangle(vertices, points, normals, texCoords, 0, 9, 4);
-  triangle(vertices, points, normals, texCoords, 9, 5, 4);
-  triangle(vertices, points, normals, texCoords, 4, 5, 8);
-  triangle(vertices, points, normals, texCoords, 4, 8, 1);
+  var texCoords1 = [];
 
-  triangle(vertices, points, normals, texCoords, 8, 10, 1);
-  triangle(vertices, points, normals, texCoords, 8, 3, 10);
-  triangle(vertices, points, normals, texCoords, 5, 3, 8);
-  triangle(vertices, points, normals, texCoords, 5, 2, 3);
-  triangle(vertices, points, normals, texCoords, 2, 7, 3);
+  for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
+    var theta = latNumber * Math.PI / latitudeBands;
+    var sinTheta = Math.sin(theta);
+    var cosTheta = Math.cos(theta);
 
-  triangle(vertices, points, normals, texCoords, 7, 10, 3);
-  triangle(vertices, points, normals, texCoords, 7, 6, 10);
-  triangle(vertices, points, normals, texCoords, 7, 11, 6);
-  triangle(vertices, points, normals, texCoords, 11, 0, 6);
-  triangle(vertices, points, normals, texCoords, 0, 1, 6);
+    for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
+      var phi = longNumber * 2.0 * Math.PI / longitudeBands;
+      var sinPhi = Math.sin(phi);
+      var cosPhi = Math.cos(phi);
 
-  triangle(vertices, points, normals, texCoords, 6, 1, 10);
-  triangle(vertices, points, normals, texCoords, 9, 0, 11);
-  triangle(vertices, points, normals, texCoords, 9, 11, 2);
-  triangle(vertices, points, normals, texCoords, 9, 2, 5);
-  triangle(vertices, points, normals, texCoords, 7, 2, 11);
+      var x = cosPhi * sinTheta;
+      var y = cosTheta;
+      var z = sinPhi * sinTheta;
 
+      var tx1 = (phi + Math.PI) / (2 * Math.PI);
+      var ty1 = - theta / Math.PI;
+
+      texCoords1.push(vec2(tx1, ty1));
+      normals1.push(vec3(x, y, z));
+      points1.push(vec4(x, y, z, 1.0));
+    }
+  }
+
+  for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
+    for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
+      var first = (latNumber * (longitudeBands + 1)) + longNumber;
+      var second = first + longitudeBands + 1;
+      points.push(points1[first], points1[second], points1[first + 1]);
+      points.push(points1[second], points1[second + 1], points1[first + 1]);
+      normals.push(normals1[first], normals1[second], normals1[first + 1]);
+      normals.push(normals1[second], normals1[second + 1], normals1[first + 1]);
+      texCoords.push(texCoords1[first], texCoords1[second], texCoords1[first + 1]);
+      texCoords.push(texCoords1[second], texCoords1[second + 1], texCoords1[first + 1]);
+    }
+  }
   var shape = { buffers: [], normals: [], textures: [] };
   shape.buffers.push(createBuffer(gl, points, gl.TRIANGLES, SURFACE));
   shape.normals.push(createNormalBuffer(gl, normals));
   shape.textures.push(createNormalBuffer(gl, texCoords));
   return shape;
-}
-
-function triangle(vertices, points, normals, texCoords, a, b, c) {
-  var tesselationDepth = 4;
-  divideTriangles(points, normals, texCoords, vertices[a], vertices[b], vertices[c], tesselationDepth);
-}
-
-function divideTriangles(points, normals, texCoords, a, b, c, depth) {
-  if (depth == 0) {
-    points.push(a, b, c);
-    normals.push(vec3(a), vec3(b), vec3(c));
-    texCoords.push(toTexCoord(a), toTexCoord(b), toTexCoord(c));
-  } else {
-    var ab = normalize(mix(a, b, 0.5), true);
-    var ac = normalize(mix(a, c, 0.5), true);
-    var bc = normalize(mix(b, c, 0.5), true);
-    divideTriangles(points, normals, texCoords, a, ab, ac, depth - 1);
-    divideTriangles(points, normals, texCoords, ab, b, bc, depth - 1);
-    divideTriangles(points, normals, texCoords, ab, bc, ac, depth - 1);
-    divideTriangles(points, normals, texCoords, ac, bc, c, depth - 1);
-  }
 }
 
 function createNormalBuffer(gl, points) {
