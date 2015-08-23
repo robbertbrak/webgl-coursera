@@ -19,6 +19,7 @@ var CHECKERBOARD_TEXTURE = 1;
 var textureMappings = [REGULAR_MAPPING, TYPE1_MAPPING, TYPE2_MAPPING, TYPE3_MAPPING];
 
 var modelViewMatrixLoc;
+var projectionMatrixLoc;
 
 var shapes = {};
 
@@ -26,6 +27,7 @@ window.onload = function init() {
   initGlProgram();
 
   modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
+  projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
 
   initShapes();
   loadTexture("earth", EARTH_TEXTURE);
@@ -45,6 +47,9 @@ window.onload = function init() {
 
 function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  var projectionMatrix = ortho(-1, 1, -1, 1, 1, -1);
+  gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
 
   if (autorotateY) {
     $("#rotateY").val(currentObject.rotateY);

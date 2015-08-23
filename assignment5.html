@@ -8,11 +8,12 @@ attribute vec4 vPosition;
 attribute vec2 vTextureCoord;
 
 uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
 
 varying vec2 fTextureCoord;
 
 void main() {
-  gl_Position = modelViewMatrix * vPosition;
+  gl_Position = projectionMatrix * modelViewMatrix * vPosition;
   fTextureCoord = vTextureCoord;
 }
 
