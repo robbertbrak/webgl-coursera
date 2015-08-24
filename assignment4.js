@@ -39,6 +39,7 @@ var materialDiffuse = vec4( 0.8, 0.8, 0.8, 1.0);
 var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 var materialShininess = 50.0;
 
+var ambientIntensity = 0.6
 var constantAttenuation = 0.01;
 var linearAttenuation = 0.01;
 var quadraticAttenuation = 0.02;
@@ -46,8 +47,8 @@ var quadraticAttenuation = 0.02;
 window.onload = function init() {
   initGlProgram();
 
-  modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
-  normalMatrixLoc = gl.getUniformLocation( program, "normalMatrix" );
+  modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
+  normalMatrixLoc = gl.getUniformLocation(program, "normalMatrix");
 
   baseColor = gl.getUniformLocation(program, "baseColor");
 
@@ -88,6 +89,11 @@ function render() {
   changeCameraY();
   moveLights();
 
+  gl.uniform1f(gl.getUniformLocation(program, "constantAttenuation"), constantAttenuation);
+  gl.uniform1f(gl.getUniformLocation(program, "linearAttenuation"), linearAttenuation);
+  gl.uniform1f(gl.getUniformLocation(program, "quadraticAttenuation"), quadraticAttenuation);
+  gl.uniform1f(gl.getUniformLocation(program, "ambientIntensity"), ambientIntensity);
+
   for (var i = 0; i < fixedObjects.length; i++) {
     renderObject(fixedObjects[i]);
   }
@@ -111,10 +117,6 @@ function renderObject(object) {
   //var o = 1;
   //var projection = ortho(-o, o, -o, o, -2, 2);
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "projectionMatrix"), false, flatten(projection));
-
-  gl.uniform1f(gl.getUniformLocation(program, "constantAttenuation"), constantAttenuation);
-  gl.uniform1f(gl.getUniformLocation(program, "linearAttenuation"), linearAttenuation);
-  gl.uniform1f(gl.getUniformLocation(program, "quadraticAttenuation"), quadraticAttenuation);
 
   var shape = object.shape;
 
@@ -303,6 +305,7 @@ function initEventListeners() {
   $("#constantAttenuation").val(constantAttenuation);
   $("#linearAttenuation").val(linearAttenuation);
   $("#quadraticAttenuation").val(quadraticAttenuation);
+  $("#ambientIntensity").val(ambientIntensity);
   $("#scale").val(0);
   $("#translate-x").val(0);
   $("#translate-y").val(0);
@@ -352,6 +355,8 @@ function initEventListeners() {
   $("#linearAttenuation").on("change", function() { linearAttenuation = $(this).val(); });
   $("#quadraticAttenuation").on("input", function() { quadraticAttenuation = $(this).val(); });
   $("#quadraticAttenuation").on("change", function() { quadraticAttenuation = $(this).val(); });
+  $("#ambientIntensity").on("input", function() { ambientIntensity = $(this).val(); });
+  $("#ambientIntensity").on("change", function() { ambientIntensity = $(this).val(); });
 
   $("#currentLight").change(function() {
     currentLight = lights[$(this).val()];
