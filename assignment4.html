@@ -28,6 +28,10 @@ precision mediump float;
 
 uniform vec4 lightPosition[4];
 uniform vec4 baseColor;
+uniform vec4 ambientColor;
+uniform vec4 diffuseColor;
+uniform vec4 specularColor;
+
 uniform float ambientIntensity;
 uniform float materialShininess;
 
@@ -35,6 +39,8 @@ uniform float constantAttenuation;
 uniform float linearAttenuation;
 uniform float quadraticAttenuation;
 
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
 uniform mat3 normalMatrix;
 
 varying vec3 fPosition;
@@ -59,12 +65,11 @@ void main() {
     vec3 l = normalize(pointLightDirection);
     vec3 v = normalize(- fPosition);
     vec3 R = reflect(l, n);
-    float shininess = materialShininess;
-    float specular = pow(max(0.0,dot(R,v)), shininess);
+    float specular = pow(max(0.0, dot(R, v)), materialShininess);
 
-    vec3 ambientColour = vec3(0.8, 0.8, 0.8)*attenuation;
-    vec3 diffuseMaterialColour = vec3(1.0, 1.0, 1.0).xyz*attenuation;
-    vec3 specularColour = vec3(1.0, 1.0, 1.0)*attenuation;
+    vec3 ambientColour = ambientColor.xyz * attenuation;
+    vec3 diffuseMaterialColour = diffuseColor.xyz * attenuation;
+    vec3 specularColour = specularColor.xyz * attenuation;
 
     float diffuseLambert = dot(l,n);
 
@@ -134,16 +139,16 @@ void main() {
       <input type="text" id="surfaceColor">
     </div>
     <div class="form-element">
-      <label for="materialAmbient">Material ambient</label>
-      <input type="text" id="materialAmbient">
+      <label for="ambientColor">Material ambient</label>
+      <input type="text" id="ambientColor">
     </div>
     <div class="form-element">
-      <label for="materialDiffuse">Material diffuse</label>
-      <input type="text" id="materialDiffuse">
+      <label for="diffuseColor">Material diffuse</label>
+      <input type="text" id="diffuseColor">
     </div>
     <div class="form-element">
-      <label for="materialSpecular">Material specular</label>
-      <input type="text" id="materialSpecular">
+      <label for="specularColor">Material specular</label>
+      <input type="text" id="specularColor">
     </div>
 
     <div class="form-element">

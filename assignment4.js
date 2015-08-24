@@ -34,9 +34,9 @@ var lightAmbient = vec4(0.4, 0.4, 0.4, 1.0 );
 var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
 var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 
-var materialAmbient = vec4( 1.0, 1.0, 1.0, 1.0 );
-var materialDiffuse = vec4( 0.8, 0.8, 0.8, 1.0);
-var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
+var ambientColor = vec4( 1.0, 1.0, 1.0, 1.0 );
+var diffuseColor = vec4( 0.8, 0.8, 0.8, 1.0);
+var specularColor = vec4( 1.0, 1.0, 1.0, 1.0 );
 var materialShininess = 50.0;
 
 var ambientIntensity = 0.6
@@ -57,9 +57,9 @@ window.onload = function init() {
   currentObject.shapeName = "sphere";
   currentObject.shape = shapes[currentObject.shapeName];
   currentObject.surfaceColor = vec4(0.0, 1.0, 0.0, 1.0);
-  currentObject.materialAmbient = materialAmbient;
-  currentObject.materialDiffuse = materialDiffuse;
-  currentObject.materialSpecular = materialSpecular;
+  currentObject.ambientColor = ambientColor;
+  currentObject.diffuseColor = diffuseColor;
+  currentObject.specularColor = specularColor;
   currentObject.materialShininess = materialShininess;
   currentObject.rotateX = 45;
   currentObject.rotateY = 45;
@@ -117,6 +117,10 @@ function renderObject(object) {
   //var o = 1;
   //var projection = ortho(-o, o, -o, o, -2, 2);
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "projectionMatrix"), false, flatten(projection));
+  gl.uniform1f(gl.getUniformLocation(program, "materialShininess"), object.materialShininess);
+  gl.uniform4fv(gl.getUniformLocation(program, "ambientColor"), flatten(object.ambientColor));
+  gl.uniform4fv(gl.getUniformLocation(program, "diffuseColor"), flatten(object.diffuseColor));
+  gl.uniform4fv(gl.getUniformLocation(program, "specularColor"), flatten(object.specularColor));
 
   var shape = object.shape;
 
@@ -144,14 +148,6 @@ function renderObject(object) {
       gl.uniform4fv(baseColor, flatten(object.surfaceColor));
     }
 
-    var ambientProduct = mult(lightAmbient, object.materialAmbient);
-    var diffuseProduct = mult(lightDiffuse, object.materialDiffuse);
-    var specularProduct = mult(lightSpecular, object.materialSpecular);
-    gl.uniform1f(gl.getUniformLocation(program, "materialShininess"), object.materialShininess);
-    gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"), flatten(ambientProduct));
-    gl.uniform4fv(gl.getUniformLocation(program, "diffuseProduct"), flatten(diffuseProduct));
-    gl.uniform4fv(gl.getUniformLocation(program, "specularProduct"), flatten(specularProduct));
-
     // Draw current buffer in given color
     gl.drawArrays(bufferInfo.drawmode, 0, bufferInfo.numVertices);
   }
@@ -165,9 +161,9 @@ function createAxis(a, b, color) {
     scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0,
     surfaceColor: color,
     lineColor: color,
-    materialAmbient: color,
-    materialDiffuse: color,
-    materialSpecular: materialSpecular,
+    ambientColor: ambientColor,
+    diffuseColor: diffuseColor,
+    specularColor: specularColor,
     materialShininess: 128
   };
 }
@@ -179,9 +175,9 @@ function createArrow(a, r, color) {
     rotateX: r[0], rotateY: r[1], rotateZ: r[2],
     scaleX: 0.03, scaleY: 0.03, scaleZ: 0.03,
     surfaceColor: color,
-    materialAmbient: color,
-    materialDiffuse: color,
-    materialSpecular: materialSpecular,
+    ambientColor: ambientColor,
+    diffuseColor: diffuseColor,
+    specularColor: specularColor,
     materialShininess: 40
   };
 }
@@ -200,9 +196,9 @@ function initLights() {
       rotateX: 0, rotateY: 0, rotateZ: 0,
       scaleX: 0.03, scaleY: 0.03, scaleZ: 0.03,
       surfaceColor: vec4(1, 1, 1, 1),
-      materialAmbient: materialAmbient,
-      materialDiffuse: materialDiffuse,
-      materialSpecular: materialSpecular,
+      ambientColor: ambientColor,
+      diffuseColor: diffuseColor,
+      specularColor: specularColor,
       materialShininess: 128
     };
 
@@ -316,9 +312,9 @@ function initEventListeners() {
   $("#materialShininess").val(materialShininess);
 
   addColorPicker("surfaceColor", "surfaceColor");
-  addColorPicker("materialAmbient", "materialAmbient");
-  addColorPicker("materialDiffuse", "materialDiffuse");
-  addColorPicker("materialSpecular", "materialSpecular");
+  addColorPicker("ambientColor", "ambientColor");
+  addColorPicker("diffuseColor", "diffuseColor");
+  addColorPicker("specularColor", "specularColor");
 
   $("#shape").change(function() {
     var shape = $(this).val();
@@ -416,9 +412,9 @@ function initEventListeners() {
     $("#scale").val(currentObject.scaleX);
     $("#materialShininess").val(currentObject.materialShininess);
     $("#surfaceColor").spectrum("set", toColorPicker(currentObject.surfaceColor));
-    $("#materialAmbient").spectrum("set", toColorPicker(currentObject.materialAmbient));
-    $("#materialDiffuse").spectrum("set", toColorPicker(currentObject.materialDiffuse));
-    $("#materialSpecular").spectrum("set", toColorPicker(currentObject.materialSpecular));
+    $("#ambientColor").spectrum("set", toColorPicker(currentObject.ambientColor));
+    $("#diffuseColor").spectrum("set", toColorPicker(currentObject.diffuseColor));
+    $("#specularColor").spectrum("set", toColorPicker(currentObject.specularColor));
 
     // Animate the selected object.
     animateSelectedObject(currentObject);
@@ -457,9 +453,9 @@ function addObject() {
     scaleY: nextScale,
     scaleZ: nextScale,
     surfaceColor: vec4(random(0, 1), random(0, 1), random(0, 1), 1.0),
-    materialAmbient: vec4(random(0, 1), random(0, 1), random(0, 1), 1.0),
-    materialDiffuse: materialDiffuse,
-    materialSpecular: materialSpecular,
+    ambientColor: ambientColor,
+    diffuseColor: diffuseColor,
+    specularColor: specularColor,
     materialShininess: random(0, 128)
   };
 
@@ -472,9 +468,9 @@ function addObject() {
   $("#scale").val(currentObject.scaleX);
   $("#materialShininess").val(currentObject.materialShininess);
   $("#surfaceColor").spectrum("set", toColorPicker(currentObject.surfaceColor));
-  $("#materialAmbient").spectrum("set", toColorPicker(currentObject.materialAmbient));
-  $("#materialDiffuse").spectrum("set", toColorPicker(currentObject.materialDiffuse));
-  $("#materialSpecular").spectrum("set", toColorPicker(currentObject.materialSpecular));
+  $("#ambientColor").spectrum("set", toColorPicker(currentObject.ambientColor));
+  $("#diffuseColor").spectrum("set", toColorPicker(currentObject.diffuseColor));
+  $("#specularColor").spectrum("set", toColorPicker(currentObject.specularColor));
 
   numObjectsCreated++;
   currentObject.id = numObjectsCreated;
@@ -555,7 +551,7 @@ function objectName() {
 }
 
 function animateSelectedObject(object) {
-  var property = "materialAmbient";
+  var property = "ambientColor";
   var originalColor = object[property];
   var white = vec4(1, 1, 1, 1);
   var counter = 0;
