@@ -4,33 +4,21 @@
 
   <script id="vertex-shader" type="x-shader/x-vertex">
 
+precision mediump float;
+
 attribute vec4 vPosition;
 attribute vec3 vNormal;
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
-uniform vec4 lightPosition[4];
 
 varying vec3 N;
-varying vec4 L[4];
-varying vec3 E;
 varying vec3 fPosition;
 
 void main() {
-  vec3 pos = -(modelViewMatrix * vPosition).xyz;
-  vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
-  vec4 NN = vec4(vNormal, 0);
-
-  // Transform vertex normal into eye coordinates
-  N = normalize((modelViewMatrix * NN).xyz);
-  E = normalize(- pos);
-
-  for (int i = 0; i < 4; i++) {
-    vec3 light = lightPosition[i].xyz;
-    L[i] = vec4(normalize(light - pos), lightPosition[i].w);
-  }
-
   gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+  fPosition = vec3(projectionMatrix * modelViewMatrix * vPosition);
+  N = vNormal;
 }
 
   </script>
@@ -38,49 +26,106 @@ void main() {
     <script id="fragment-shader" type="x-shader/x-fragment">
 precision mediump float;
 
-uniform vec4 ambientProduct;
-uniform vec4 diffuseProduct;
-uniform vec4 specularProduct;
+uniform vec4 lightPosition[4];
 uniform vec4 baseColor;
 uniform float materialShininess;
+
 uniform float constantAttenuation;
 uniform float linearAttenuation;
 uniform float quadraticAttenuation;
 
+uniform mat3 normalMatrix;
+
+varying vec3 fPosition;
 varying vec3 N;
-varying vec4 L[4];
-varying vec3 E;
 
 void main() {
-
-  vec4 ambient = ambientProduct;
-  vec4 fColor = vec4(0.0, 0.0, 0.0, 1.0);
-
+  // gl_FragColor = texture2D(uSampler, vec2(fTextureCoord.st));
+  vec4 lightColor = vec4(0, 0, 0, 1);
   for (int i = 0; i < 4; i++) {
-    if (L[i].w == 1.0) {
-      vec3 H = normalize(L[i].xyz + E);
-
-      float distance = length(L[i].xyz - E);
-      float Kd = max(dot(L[i].xyz, N), 0.0);
-      vec4 diffuse = Kd * diffuseProduct;
-
-      float Ks = pow(max(dot(N, H), 0.0), materialShininess);
-      vec4  specular = Ks * specularProduct;
-
-      if (dot(L[i].xyz, N) < 0.0) {
-        specular = vec4(0.0, 0.0, 0.0, 1.0);
-      }
-
-      float attenuation = 1.0 / (constantAttenuation + linearAttenuation * distance + (quadraticAttenuation * distance * distance));
-
-      fColor = fColor + attenuation * diffuse + attenuation * specular;
+    if (lightPosition[i].w != 1.0) {
+      continue;
     }
+    vec3 pointLightPosition = lightPosition[i].xyz;
+    vec3 pointLightDirection = vec3(pointLightPosition.xyz - fPosition.xyz);
+    float d = length(pointLightDirection);
+    float attenuation = 1.0 / (constantAttenuation + linearAttenuation * d + quadraticAttenuation * d * d);
+
+    vec3 L = vec3(vec4(pointLightDirection, 1.0));
+    vec3 V = -vec3(vec4(fPosition,1.0));
+
+    vec3 l = normalize(L);
+    vec3 n = normalize(normalMatrix * N);
+    vec3 v = normalize(V);
+
+    vec3 R = reflect(l, n);
+
+    float diffuseLambert = dot(l,n);
+    float AmbientIntensity = 0.6;
+    vec3 DiffuseLightIntensity = vec3(0.9, 0.9, 0.9);
+    float SpecularIntensity = 0.5;
+    float shininess = materialShininess;
+
+    float specular = pow(max(0.0,dot(R,v)), shininess);
+
+    vec3 AmbientColour = vec3(0.8, 0.8, 0.8)*attenuation;
+    vec3 DiffuseMaterialColour = vec3(1.0, 1.0, 1.0).xyz*attenuation;
+    vec3 SpecularColour = vec3(1.0, 1.0, 1.0)*attenuation;
+
+    lightColor = lightColor + vec4(AmbientColour * AmbientIntensity
+      + diffuseLambert * DiffuseMaterialColour * DiffuseLightIntensity
+      + SpecularColour * specular * SpecularIntensity, 1.0);
   }
 
-  fColor = fColor + ambient;
-
-  gl_FragColor = vec4(fColor.rgb, baseColor.a);
+  vec4 materialColor = vec4(baseColor.rgb * lightColor.rgb, baseColor.a);
+  gl_FragColor = materialColor;
 }
+
+
+//uniform vec4 ambientProduct;
+//uniform vec4 diffuseProduct;
+//uniform vec4 specularProduct;
+//uniform vec4 baseColor;
+//uniform float materialShininess;
+//uniform float constantAttenuation;
+//uniform float linearAttenuation;
+//uniform float quadraticAttenuation;
+//
+//varying vec3 N;
+//varying vec4 L[4];
+//varying vec3 E;
+//
+//void main() {
+//
+//  vec4 ambient = ambientProduct;
+//  vec4 fColor = vec4(0.0, 0.0, 0.0, 1.0);
+//
+//  for (int i = 0; i < 4; i++) {
+//    if (L[i].w == 1.0) {
+//      vec3 H = normalize(L[i].xyz + E);
+//
+//      float distance = length(L[i].xyz - E);
+//      float Kd = max(dot(L[i].xyz, N), 0.0);
+//      vec4 diffuse = Kd * diffuseProduct;
+//
+//      float Ks = pow(max(dot(N, H), 0.0), materialShininess);
+//      vec4  specular = Ks * specularProduct;
+//
+//      if (dot(L[i].xyz, N) < 0.0) {
+//        specular = vec4(0.0, 0.0, 0.0, 1.0);
+//      }
+//
+//      float attenuation = 1.0 / (constantAttenuation + linearAttenuation * distance + (quadraticAttenuation * distance * distance));
+//
+//      fColor = fColor + attenuation * diffuse + attenuation * specular;
+//    }
+//  }
+//
+//  fColor = fColor + ambient;
+//
+//  gl_FragColor = vec4(fColor.rgb, baseColor.a);
+//}
+
 </script>
 
   <script type="text/javascript" src="common/webgl-utils.js"></script>
@@ -133,12 +178,10 @@ void main() {
   </div>
   <div class="form-group">
     <h3>Material properties</h3>
-    <!--
     <div class="form-element">
       <label for="surfaceColor">Surface color</label>
       <input type="text" id="surfaceColor">
     </div>
-    -->
     <div class="form-element">
       <label for="materialAmbient">Material ambient</label>
       <input type="text" id="materialAmbient">
@@ -224,15 +267,15 @@ void main() {
     <h3>Distance attenuation</h3>
     <div class="form-element">
       <label for="constantAttenuation">Constant attenuation</label>
-      <input type="range" class="slider" id="constantAttenuation" min="0" max="2" step="0.01" value="0">
+      <input type="range" class="slider" id="constantAttenuation" min="0.001" max="0.2" step="0.001" value="0">
     </div>
     <div class="form-element">
       <label for="linearAttenuation">Linear attenuation</label>
-      <input type="range" class="slider" id="linearAttenuation" min="0" max="2" step="0.01" value="0">
+      <input type="range" class="slider" id="linearAttenuation" min="0" max="0.2" step="0.001" value="0">
     </div>
     <div class="form-element">
       <label for="quadraticAttenuation">Quadratic attenuation</label>
-      <input type="range" class="slider" id="quadraticAttenuation" min="0" max="2" step="0.01" value="0">
+      <input type="range" class="slider" id="quadraticAttenuation" min="0" max="0.2" step="0.001" value="0">
     </div>
   </div>
 

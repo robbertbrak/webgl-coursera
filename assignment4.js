@@ -17,6 +17,7 @@ var numObjectsCreated = 0;
 var mouseDown = false;
 
 var modelViewMatrixLoc;
+var normalMatrixLoc;
 
 var shapes = {};
 var camera = {};
@@ -38,14 +39,15 @@ var materialDiffuse = vec4( 0.8, 0.8, 0.8, 1.0);
 var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 var materialShininess = 50.0;
 
-var constantAttenuation = 1.0;
-var linearAttenuation = 1.0;
-var quadraticAttenuation = 1.0;
+var constantAttenuation = 0.01;
+var linearAttenuation = 0.01;
+var quadraticAttenuation = 0.02;
 
 window.onload = function init() {
   initGlProgram();
 
   modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
+  normalMatrixLoc = gl.getUniformLocation( program, "normalMatrix" );
 
   baseColor = gl.getUniformLocation(program, "baseColor");
 
@@ -78,8 +80,6 @@ window.onload = function init() {
 function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  console.log(camera.angle);
-
   if (camera.animated) {
     camera.angle += 0.05;
     camera.angle %= 360;
@@ -104,8 +104,12 @@ function renderObject(object) {
       mult(getRotationMatrix(object.rotateX, object.rotateY, object.rotateZ),
           getScaleMatrix(object.scaleX, object.scaleY, object.scaleZ)));
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+  gl.uniformMatrix3fv(normalMatrixLoc, false, flatten(normalMatrix(modelViewMatrix, true)));
 
-  var projection = mult(perspective(20, canvas.clientWidth / canvas.clientHeight, 1, 20), lookAt(eye, [0, 0, 0], up))
+  var at = [0, 0, 0];
+  var projection = mult(perspective(20, canvas.clientWidth / canvas.clientHeight, 1, 20), lookAt(eye, at, up));
+  //var o = 1;
+  //var projection = ortho(-o, o, -o, o, -2, 2);
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "projectionMatrix"), false, flatten(projection));
 
   gl.uniform1f(gl.getUniformLocation(program, "constantAttenuation"), constantAttenuation);
@@ -260,7 +264,7 @@ function getTranslationMatrix(x, y, z) {
 }
 
 function getScaleMatrix(x, y, z) {
-  return scale(x, y, z);
+  return scalem(x, y, z);
 }
 
 function coord(event) {
