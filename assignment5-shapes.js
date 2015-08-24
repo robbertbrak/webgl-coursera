@@ -6,8 +6,8 @@ var TYPE2_MAPPING = 2;
 var TYPE3_MAPPING = 3;
 
 function createSphere(gl, typeOfMapping) {
-  var latitudeBands = 30;
-  var longitudeBands = 30;
+  var latitudeBands = 40;
+  var longitudeBands = 40;
   var points = [];
   var points1 = [];
   var normals = [];

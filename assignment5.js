@@ -20,6 +20,7 @@ var textureMappings = [REGULAR_MAPPING, TYPE1_MAPPING, TYPE2_MAPPING, TYPE3_MAPP
 
 var modelViewMatrixLoc;
 var projectionMatrixLoc;
+var normalMatrixLoc;
 
 var shapes = {};
 
@@ -27,6 +28,7 @@ window.onload = function init() {
   initGlProgram();
 
   modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
+  normalMatrixLoc = gl.getUniformLocation( program, "normalMatrix" );
   projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
 
   initShapes();
@@ -69,10 +71,16 @@ function renderObject(object) {
       mult(getRotationMatrix(object.rotateX, object.rotateY, object.rotateZ),
           getScaleMatrix(object.scale, object.scale, object.scale)));
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+  gl.uniformMatrix3fv(normalMatrixLoc, false, flatten(normalMatrix(modelViewMatrix, true)));
 
   var shape = object.shape;
 
   for (var j = 0; j < shape.buffers.length; j++) {
+    var normalInfo = shape.normals[j];
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalInfo.buffer);
+    var vNormal = gl.getAttribLocation(program, "vNormal");
+    gl.vertexAttribPointer(vNormal, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vNormal);
 
     gl.uniform1i(gl.getUniformLocation(program, "uSampler"), object.texture);
     var vertexTexCoordAttribute = gl.getAttribLocation(program, "vTextureCoord");
@@ -168,21 +176,23 @@ function setupTexture(i, options) {
 
 function createCheckerboard() {
   var texSize = 1024;
-  var numChecks = 16;
+  var numChecks = 32;
   var image = new Uint8Array(4*texSize*texSize);
-  var c = 0;
+  var c = [0, 0, 0];
 
   // Create a checkerboard pattern
   for ( var i = 0; i < texSize; i++ ) {
     for ( var j = 0; j <texSize; j++ ) {
       var patchx = Math.floor(i/(texSize/numChecks));
       var patchy = Math.floor(j/(texSize/numChecks));
-      if (patchx % 2 ^ patchy % 2) c = 255;
-      else c = 0;
-      //c = 255*(((i & 0x8) == 0) ^ ((j & 0x8)  == 0))
-      image[4*i*texSize+4*j] = c;
-      image[4*i*texSize+4*j+1] = c;
-      image[4*i*texSize+4*j+2] = c;
+      if (patchx % 2 ^ patchy % 2) {
+        c = [ 255, 255, 255];
+      } else {
+        c = [ 128, 60, 0];
+      }
+      image[4*i*texSize+4*j] = c[0];
+      image[4*i*texSize+4*j+1] = c[1];
+      image[4*i*texSize+4*j+2] = c[2];
       image[4*i*texSize+4*j+3] = 255;
     }
   }
