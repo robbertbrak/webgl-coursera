@@ -39,7 +39,10 @@ var diffuseColor = vec4( 0.8, 0.8, 0.8, 1.0);
 var specularColor = vec4( 1.0, 1.0, 1.0, 1.0 );
 var materialShininess = 50.0;
 
-var ambientIntensity = 0.6
+var ambientIntensity = 0.6;
+var diffuseIntensity = 0.9;
+var specularIntensity = 0.5;
+
 var constantAttenuation = 0.01;
 var linearAttenuation = 0.01;
 var quadraticAttenuation = 0.02;
@@ -93,6 +96,8 @@ function render() {
   gl.uniform1f(gl.getUniformLocation(program, "linearAttenuation"), linearAttenuation);
   gl.uniform1f(gl.getUniformLocation(program, "quadraticAttenuation"), quadraticAttenuation);
   gl.uniform1f(gl.getUniformLocation(program, "ambientIntensity"), ambientIntensity);
+  gl.uniform1f(gl.getUniformLocation(program, "diffuseIntensity"), diffuseIntensity);
+  gl.uniform1f(gl.getUniformLocation(program, "specularIntensity"), specularIntensity);
 
   for (var i = 0; i < fixedObjects.length; i++) {
     renderObject(fixedObjects[i]);
@@ -302,6 +307,8 @@ function initEventListeners() {
   $("#linearAttenuation").val(linearAttenuation);
   $("#quadraticAttenuation").val(quadraticAttenuation);
   $("#ambientIntensity").val(ambientIntensity);
+  $("#diffuseIntensity").val(diffuseIntensity);
+  $("#specularIntensity").val(specularIntensity);
   $("#scale").val(0);
   $("#translate-x").val(0);
   $("#translate-y").val(0);
@@ -353,6 +360,10 @@ function initEventListeners() {
   $("#quadraticAttenuation").on("change", function() { quadraticAttenuation = $(this).val(); });
   $("#ambientIntensity").on("input", function() { ambientIntensity = $(this).val(); });
   $("#ambientIntensity").on("change", function() { ambientIntensity = $(this).val(); });
+  $("#diffuseIntensity").on("input", function() { diffuseIntensity = $(this).val(); });
+  $("#diffuseIntensity").on("change", function() { diffuseIntensity = $(this).val(); });
+  $("#specularIntensity").on("input", function() { specularIntensity = $(this).val(); });
+  $("#specularIntensity").on("change", function() { specularIntensity = $(this).val(); });
 
   $("#currentLight").change(function() {
     currentLight = lights[$(this).val()];
@@ -434,6 +445,7 @@ function changeShape(shape) {
   currentObject.shapeName = shape;
   currentObject.shape = shapes[currentObject.shapeName];
   $("#current-object option:selected").text(objectName());
+  $("#shape").val(currentObject.shapeName);
 }
 
 function addObject() {
