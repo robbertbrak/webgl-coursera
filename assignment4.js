@@ -33,7 +33,7 @@ var currentLight = {};
 var ambientColor = vec4( 1.0, 1.0, 1.0, 1.0 );
 var diffuseColor = vec4( 0.8, 0.8, 0.8, 1.0);
 var specularColor = vec4( 1.0, 1.0, 1.0, 1.0 );
-var materialShininess = 50.0;
+var materialShininess = 10.0;
 
 var ambientIntensity = 0.4;
 var diffuseIntensity = 0.9;
@@ -81,8 +81,7 @@ function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   if (camera.animated) {
-    camera.angle += 0.05;
-    camera.angle %= 360;
+    camera.angle = (parseFloat(camera.angle) + 0.05) % 360;
     $("#cameraAngleY").val(camera.angle);
   }
   changeCameraY();
@@ -165,7 +164,7 @@ function createAxis(a, b, color) {
     ambientColor: ambientColor,
     diffuseColor: diffuseColor,
     specularColor: specularColor,
-    materialShininess: 128
+    materialShininess: 10
   };
 }
 
@@ -179,7 +178,7 @@ function createArrow(a, r, color) {
     ambientColor: ambientColor,
     diffuseColor: diffuseColor,
     specularColor: specularColor,
-    materialShininess: 40
+    materialShininess: 10
   };
 }
 
@@ -193,6 +192,7 @@ function initLights() {
     light.phi = random(0, 360);
     light.radius = random(10, 20);
     light.position = vec4(0, 0, 0, 0);
+    light.speed = 1;
     calculateLightPosition(light);
 
     lights.push(light);
@@ -211,22 +211,22 @@ function calculateLightPosition(currentLight) {
   var sinTheta = Math.sin(radians(currentLight.theta));
   var cosPhi = Math.cos(radians(currentLight.phi));
   var sinPhi = Math.sin(radians(currentLight.phi));
-  currentLight.position[0] = currentLight.radius * cosTheta * sinPhi;
-  currentLight.position[1] = currentLight.radius * sinTheta * sinPhi;
-  currentLight.position[2] = currentLight.radius * cosPhi;
+  var radius = parseFloat(currentLight.radius);
+  currentLight.position[0] = radius * cosTheta * sinPhi;
+  currentLight.position[1] = radius * sinTheta * sinPhi;
+  currentLight.position[2] = radius * cosPhi;
 }
 
 function moveLights() {
   for (var i = 0; i < lights.length; i++) {
     var light = lights[i];
     if (light.animate) {
-      var adjustment = 1;
-      if (i % 2 == 0) {
-        adjustment = -1;
-      }
-      light.phi = (light.phi + 360 + adjustment) % 360;
+      var speed = parseFloat(light.speed);
+      var theta = parseFloat(light.theta);
+      var phi = parseFloat(light.phi);
+      light.phi = (phi + 360 + speed) % 360;
       if (random(0, 100) < 5) {
-        light.theta = (light.theta + 360 +adjustment) % 360;
+        light.theta = (theta + 360 + speed) % 360;
       }
     }
     calculateLightPosition(light);
@@ -375,9 +375,10 @@ function initEventListeners() {
 
   $("#lightAnimated").click(function() {
     currentLight.animate = this.checked;
-    $("#lightTheta").prop("disabled", this.checked);
-    $("#lightPhi").prop("disabled", this.checked);
   });
+
+  $("#lightSpeed").on("input", function() { currentLight.speed = $(this).val(); });
+  $("#lightSpeed").on("change", function() { currentLight.speed = $(this).val(); });
 
   $("#lightTheta").on("input", function() { currentLight.theta = $(this).val(); });
   $("#lightTheta").on("change", function() { currentLight.theta = $(this).val(); });
@@ -441,8 +442,7 @@ function updateLightUI(currentLight) {
   $("#lightRadius").val(currentLight.radius);
   $("#lightOnOff").prop('checked', currentLight.position[3] == 1);
   $("#lightAnimated").prop('checked', currentLight.animate);
-  $("#lightTheta").prop("disabled", currentLight.animate);
-  $("#lightPhi").prop("disabled", currentLight.animate);
+  $("#lightSpeed").val(currentLight.speed);
 
 }
 
@@ -473,7 +473,7 @@ function addObject() {
     ambientColor: ambientColor,
     diffuseColor: diffuseColor,
     specularColor: specularColor,
-    materialShininess: random(0, 128)
+    materialShininess: random(0.5, 10)
   };
 
   $("#translate-x").val(currentObject.x);
@@ -526,10 +526,11 @@ function changeTranslation(val, axis) {
 }
 
 function changeCameraY() {
-  var r = camera.radius;
+  var r = parseFloat(camera.radius);
+  var angle = parseFloat(camera.angle);
   var y = eye[1];
-  var sin = Math.sin(radians(camera.angle));
-  var cos = Math.cos(radians(camera.angle));
+  var sin = Math.sin(radians(angle));
+  var cos = Math.cos(radians(angle));
   var h = Math.sqrt((r * r - y * y));
   eye[0] = h * cos;
   eye[1] = y;
