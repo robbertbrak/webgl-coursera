@@ -113,7 +113,7 @@ function renderObject(object) {
   gl.uniformMatrix3fv(normalMatrixLoc, false, flatten(normalMatrix(modelViewMatrix, true)));
 
   var at = [0, 0, 0];
-  var projection = mult(perspective(20, canvas.clientWidth / canvas.clientHeight, 1, 20), lookAt(eye, at, up));
+  var projection = mult(perspective(45, canvas.clientWidth / canvas.clientHeight, 1, 20), lookAt(eye, at, up));
   //var o = 1;
   //var projection = ortho(-o, o, -o, o, -2, 2);
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "projectionMatrix"), false, flatten(projection));
@@ -173,7 +173,7 @@ function createArrow(a, r, color) {
     shape: shapes["cone"],
     x: a[0], y: a[1], z: a[2],
     rotateX: r[0], rotateY: r[1], rotateZ: r[2],
-    scaleX: 0.03, scaleY: 0.03, scaleZ: 0.03,
+    scaleX: 0.06, scaleY: 0.06, scaleZ: 0.06,
     surfaceColor: color,
     ambientColor: ambientColor,
     diffuseColor: diffuseColor,
@@ -455,14 +455,14 @@ function changeShape(shape) {
 
 function addObject() {
   var prev = currentObject;
-  var nextScale = random(0.01, 0.3);
+  var nextScale = random(0.05, 0.6);
 
   currentObject = {
     shapeName: prev.shapeName,
     shape: shapes[prev.shapeName],
-    x: random(-0.8, 0.8),
-    y: random(-0.8, 0.8),
-    z: random(-0.8, 0.8),
+    x: random(-1.8, 1.8),
+    y: random(-1.8, 1.8),
+    z: random(-1.8, 1.8),
     rotateX: random(0, 360),
     rotateY: random(0, 360),
     rotateZ: random(0, 360),
@@ -546,13 +546,13 @@ function changeRotation(val, axis) {
 }
 
 function createAxes() {
-  var xAxis = createAxis(vec4(-1, 0, 0, 1.0), vec4(1, 0, 0, 1.0), vec4(1.0, 0, 0, 1.0));
-  var yAxis = createAxis(vec4(0, -1, 0, 1.0), vec4(0, 1, 0, 1.0), vec4(0, 1.0, 0, 1.0));
-  var zAxis = createAxis(vec4(0, 0, -1, 1.0), vec4(0, 0, 1, 1.0), vec4(0, 0, 1.0, 1.0));
+  var xAxis = createAxis(vec4(-2, 0, 0, 1.0), vec4(2, 0, 0, 1.0), vec4(1.0, 0, 0, 1.0));
+  var yAxis = createAxis(vec4(0, -2, 0, 1.0), vec4(0, 2, 0, 1.0), vec4(0, 1.0, 0, 1.0));
+  var zAxis = createAxis(vec4(0, 0, -2, 1.0), vec4(0, 0, 2, 1.0), vec4(0, 0, 1.0, 1.0));
   fixedObjects.push(xAxis, yAxis, zAxis);
-  fixedObjects.push(createArrow([1, 0, 0], [0, 90, 0], vec4(1.0, 0, 0, 1.0)));
-  fixedObjects.push(createArrow([0, 1, 0], [270, 0, 0], vec4(0, 1.0, 0, 1.0)));
-  fixedObjects.push(createArrow([0, 0, 1], [180, 0, 0], vec4(0, 0, 1.0, 1.0)));
+  fixedObjects.push(createArrow([2, 0, 0], [0, 90, 0], vec4(1.0, 0, 0, 1.0)));
+  fixedObjects.push(createArrow([0, 2, 0], [270, 0, 0], vec4(0, 1.0, 0, 1.0)));
+  fixedObjects.push(createArrow([0, 0, 2], [180, 0, 0], vec4(0, 0, 1.0, 1.0)));
 }
 
 function findObjectIndex(id) {
