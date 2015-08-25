@@ -35,9 +35,9 @@ var diffuseColor = vec4( 0.8, 0.8, 0.8, 1.0);
 var specularColor = vec4( 1.0, 1.0, 1.0, 1.0 );
 var materialShininess = 50.0;
 
-var ambientIntensity = 0.6;
+var ambientIntensity = 0.4;
 var diffuseIntensity = 0.9;
-var specularIntensity = 0.5;
+var specularIntensity = 0.8;
 
 var constantAttenuation = 0.01;
 var linearAttenuation = 0.01;
@@ -191,7 +191,7 @@ function initLights() {
     light.animate = false;
     light.theta = random(0, 360);
     light.phi = random(0, 360);
-    light.radius = random(6, 16);
+    light.radius = random(10, 20);
     light.position = vec4(0, 0, 0, 0);
     calculateLightPosition(light);
 
@@ -199,6 +199,8 @@ function initLights() {
   }
   lights[0].position[3] = 1;
   lights[0].animate = true;
+  lights[1].position[3] = 1;
+  lights[1].animate = true;
 
   currentLight = lights[0];
   updateLightUI(currentLight);
@@ -218,9 +220,13 @@ function moveLights() {
   for (var i = 0; i < lights.length; i++) {
     var light = lights[i];
     if (light.animate) {
-      light.phi = (light.phi + 1) % 360;
+      var adjustment = 1;
+      if (i % 2 == 0) {
+        adjustment = -1;
+      }
+      light.phi = (light.phi + 360 + adjustment) % 360;
       if (random(0, 100) < 5) {
-        light.theta = (light.theta + 1) % 360;
+        light.theta = (light.theta + 360 +adjustment) % 360;
       }
     }
     calculateLightPosition(light);
@@ -369,6 +375,8 @@ function initEventListeners() {
 
   $("#lightAnimated").click(function() {
     currentLight.animate = this.checked;
+    $("#lightTheta").prop("disabled", this.checked);
+    $("#lightPhi").prop("disabled", this.checked);
   });
 
   $("#lightTheta").on("input", function() { currentLight.theta = $(this).val(); });
@@ -433,6 +441,9 @@ function updateLightUI(currentLight) {
   $("#lightRadius").val(currentLight.radius);
   $("#lightOnOff").prop('checked', currentLight.position[3] == 1);
   $("#lightAnimated").prop('checked', currentLight.animate);
+  $("#lightTheta").prop("disabled", currentLight.animate);
+  $("#lightPhi").prop("disabled", currentLight.animate);
+
 }
 
 function changeShape(shape) {

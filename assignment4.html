@@ -63,19 +63,20 @@ void main() {
     vec3 l = normalize(pointLightDirection);
     vec3 v = normalize(- fPosition);
     vec3 R = reflect(l, n);
-    float specular = pow(max(0.0, dot(R, v)), materialShininess);
+    float specular = pow(max(0.0, max(dot(R, v), 0.0)), materialShininess);
+    // float specular = 0;
 
     vec3 ambientColour = ambientColor.xyz * attenuation;
     vec3 diffuseColour = diffuseColor.xyz * attenuation;
     vec3 specularColour = specularColor.xyz * attenuation;
 
-    float diffuseLambert = dot(l,n);
+    float diffuseLambert = max(dot(l, n), 0.0);
 
-    lightColor = lightColor + vec4(ambientColour * ambientIntensity
-      + diffuseLambert * diffuseColour * diffuseIntensity
+    lightColor = lightColor + vec4(diffuseLambert * diffuseColour * diffuseIntensity
       + specularColour * specular * specularIntensity, 1.0);
   }
 
+  lightColor = lightColor + ambientColor * ambientIntensity;
   vec4 materialColor = vec4(baseColor.rgb * lightColor.rgb, baseColor.a);
   gl_FragColor = materialColor;
 }
@@ -136,10 +137,12 @@ void main() {
       <label for="surfaceColor">Surface color</label>
       <input type="text" id="surfaceColor">
     </div>
+    <!--
     <div class="form-element">
       <label for="ambientColor">Material ambient</label>
       <input type="text" id="ambientColor">
     </div>
+    -->
     <div class="form-element">
       <label for="diffuseColor">Material diffuse</label>
       <input type="text" id="diffuseColor">
