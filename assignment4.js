@@ -569,7 +569,7 @@ function objectName() {
 }
 
 function animateSelectedObject(object) {
-  var property = "ambientColor";
+  var property = "surfaceColor";
   var originalColor = object[property];
   var white = vec4(1, 1, 1, 1);
   var counter = 0;
