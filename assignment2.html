@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+attribute vec4 vColor;
+
+varying vec4 fColor;
+
+void main() {
+  gl_Position = vPosition;
+  fColor = vColor;
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec4 fColor;
+
+void main() {
+  gl_FragColor = fColor;
+}
+</script>
+
+<script type="text/javascript" src="common/webgl-utils.js"></script>
+<script type="text/javascript" src="common/initShaders.js"></script>
+<script type="text/javascript" src="common/MV.js"></script>
+<script type="text/javascript" src="assignment2.js"></script>
+<style type="text/css">
+  html, body { margin: 0; padding: 0; background-color: rgb(90, 90, 90); color: white; font-family: Arial, sans-serif; }
+  .form-group {  }
+  label { display: inline-block; width: 100px; vertical-align: middle; line-height: 2.3em; }
+  input, select { display: inline-block; vertical-align: middle; line-height: 2.3em; }
+  .slider { width: 300px; }
+  .form { float: left; padding: 10px; }
+  canvas { float: left; margin: 0; padding: 0; cursor: crosshair; }
+  #line-appearance { display: inline-block; width: 300px; vertical-align: middle; }
+</style>
+</head>
+
+<body>
+<canvas id="gl-canvas" width="800" height="800">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+<div class="form">
+  <div class="form-group">
+    <label for="straight-lines">Straight lines</label>
+    <input type="checkbox" id="straight-lines">
+  </div>
+  <div class="form-group">
+    <label for="thickness">Thickness</label>
+    <input type="range" class="slider" id="thickness" min="0.002" max="0.05" step="0.001" value="0.005">
+  </div>
+  <div class="form-group">
+    <label for="red">Red</label>
+    <input type="range" class="slider" id="red" min="0" max="255" step="1" value="255">
+  </div>
+  <div class="form-group">
+    <label for="green">Green</label>
+    <input type="range" class="slider" id="green" min="0" max="255" step="1" value="0">
+  </div>
+  <div class="form-group">
+    <label for="blue">Blue</label>
+    <input type="range" class="slider" id="blue" min="0" max="255" step="1" value="0">
+  </div>
+  <div class="form-group">
+    <label for="line-appearance">Appearance</label>
+    <div id="line-appearance">&nbsp;</div>
+  </div>
+  <div class="form-group">
+    <label for="clear-canvas"></label>
+    <button id="clear-canvas">Clear canvas</button>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+
+attribute  vec4 vPosition;
+
+uniform mat4 modelViewMatrix;
+
+void main() {
+  gl_Position = modelViewMatrix * vPosition;
+}
+
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+   
+uniform vec4 fColor;
+
+void main() {
+  gl_FragColor = fColor;
+}
+</script>
+
+<script type="text/javascript" src="common/webgl-utils.js"></script>
+<script type="text/javascript" src="common/initShaders.js"></script>
+<script type="text/javascript" src="common/MV.js"></script>
+<script type="text/javascript" src="assignment3-shapes.js"></script>
+<script type="text/javascript" src="assignment3.js"></script>
+<script type="text/javascript" src="common/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="common/spectrum.js"></script>
+<link rel="stylesheet" href="common/spectrum.css" />
+
+<style type="text/css">
+  html, body { margin: 0; padding: 0; background-color: rgb(90, 90, 90); color: white; font-family: Arial, sans-serif; }
+  .form-group {  }
+  label { display: inline-block; width: 150px; vertical-align: middle; line-height: 2.3em; }
+  input, select { display: inline-block; vertical-align: middle; line-height: 2.3em; }
+  .slider { width: 300px; }
+  .form { float: left; padding: 10px; }
+  canvas { float: left; margin: 0; padding: 0; cursor: crosshair; }
+  a { color: white; }
+</style>
+</head>
+
+<body>
+<div class="form" style="max-width: 500px">
+  <div class="form-group">
+    <label for="add-object">&nbsp;</label>
+    <button id="add-object">Add object</button>
+    <button id="remove-object">Remove object</button>
+  </div>
+  <div class="form-group">
+    <label for="current-object">Current object:</label>
+    <select id="current-object">
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="shape">Shape</label>
+    <select id="shape">
+      <option value="sphere" selected="selected">Sphere</option>
+      <option value="cylinder">Cylinder</option>
+      <option value="cone">Cone</option>
+      <option value="cube">Cube</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="surface-color">Surface color</label>
+    <input type="text" id="surface-color">
+  </div>
+  <div class="form-group">
+    <label for="line-color">Line color</label>
+    <input type="text" id="line-color">
+  </div>
+  <div class="form-group">
+    <label for="scale-x">Scale x</label>
+    <input type="range" class="slider" id="scale-x" min="0.01" max="1.0" step="0.01" value="0">
+  </div>
+  <div class="form-group">
+    <label for="scale-y">Scale y</label>
+    <input type="range" class="slider" id="scale-y" min="0.01" max="1.0" step="0.01" value="0">
+  </div>
+  <div class="form-group">
+    <label for="scale-z">Scale z</label>
+    <input type="range" class="slider" id="scale-z" min="0.01" max="1.0" step="0.01" value="0">
+  </div>
+  <div class="form-group">
+    <label for="rotate-x">Rotate x</label>
+    <input type="range" class="slider" id="rotate-x" min="0" max="360" step="1" value="0">
+  </div>
+  <div class="form-group">
+    <label for="rotate-y">Rotate y</label>
+    <input type="range" class="slider" id="rotate-y" min="0" max="360" step="1" value="0">
+  </div>
+  <div class="form-group">
+    <label for="rotate-z">Rotate z</label>
+    <input type="range" class="slider" id="rotate-z" min="0" max="360" step="1" value="0">
+  </div>
+  <div class="form-group">
+    <label for="translate-x">Translate x</label>
+    <input type="range" class="slider" id="translate-x" min="-1.0" max="1.0" step="0.001" value="0">
+  </div>
+  <div class="form-group">
+    <label for="translate-y">Translate y</label>
+    <input type="range" class="slider" id="translate-y" min="-1.0" max="1.0" step="0.001" value="0">
+  </div>
+  <div class="form-group">
+    <label for="translate-z">Translate z</label>
+    <input type="range" class="slider" id="translate-z" min="-1.0" max="1.0" step="0.001" value="0">
+  </div>
+  <div class="form-group">
+    <label for="camera-angle-x">Camera up</label>
+    <input type="range" class="slider" id="camera-angle-x" min="0" max="360" step="1" value="0">
+  </div>
+  <div class="form-group">
+    <label for="camera-angle-y">Camera rotation</label>
+    <input type="range" class="slider" id="camera-angle-y" min="0" max="360" step="1" value="45">
+  </div>
+
+  <div class="form-group">
+    <h2>Instructions</h2>
+    <p>
+      Click 'Add object' to add an object to the canvas, then use the menu options to change its properties.
+      Select a 'Current object' to change objects added earlier.
+    </p>
+    <p>
+      Note: You <em>can</em> also click and drag on the canvas to move the object along the x and y axis, but the results
+      might be unexpected due to camera rotation.
+    </p>
+    <p>
+      Ctrl+Click and drag on the canvas is an alternative way to rotate an object along the x and y axis.
+    </p>
+  </div>
+  <div class="footer">
+    Tested in Chrome and Firefox.<br>
+    Color picker: <a href="https://bgrins.github.io/spectrum/">https://bgrins.github.io/spectrum/</a>
+  </div>
+</div>
+
+<canvas id="gl-canvas" width="800" height="800">
+  Oops ... your browser doesn"t support the HTML5 canvas element
+</canvas>
+   
+</body>
+</html>

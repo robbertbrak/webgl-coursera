@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <script id="vertex-shader" type="x-shader/x-vertex">
+
+precision mediump float;
+
+attribute vec4 vPosition;
+attribute vec3 vNormal;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+
+varying vec3 N;
+varying vec3 fPosition;
+
+void main() {
+  gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+  fPosition = vec3(projectionMatrix * modelViewMatrix * vPosition);
+  N = vNormal;
+}
+
+  </script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+uniform vec4 lightPosition[4];
+uniform vec4 baseColor;
+uniform vec4 ambientColor;
+uniform vec4 diffuseColor;
+uniform vec4 specularColor;
+
+uniform float ambientIntensity;
+uniform float diffuseIntensity;
+uniform float specularIntensity;
+uniform float materialShininess;
+
+uniform float constantAttenuation;
+uniform float linearAttenuation;
+uniform float quadraticAttenuation;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat3 normalMatrix;
+
+varying vec3 fPosition;
+varying vec3 N;
+
+void main() {
+  vec4 lightColor = vec4(0, 0, 0, 1);
+  for (int i = 0; i < 4; i++) {
+    if (lightPosition[i].w != 1.0) {
+      continue;
+    }
+    vec3 pointLightPosition = lightPosition[i].xyz;
+    vec3 pointLightDirection = vec3(pointLightPosition.xyz - fPosition.xyz);
+    float d = length(pointLightDirection);
+    float attenuation = 1.0 / (constantAttenuation + linearAttenuation * d + quadraticAttenuation * d * d);
+
+    vec3 n = normalize(normalMatrix * N);
+    vec3 l = normalize(pointLightDirection);
+    vec3 v = normalize(- fPosition);
+    vec3 R = reflect(l, n);
+    float specular = pow(max(0.0, max(dot(R, v), 0.0)), materialShininess);
+
+    vec3 ambientColour = ambientColor.xyz * attenuation;
+    vec3 diffuseColour = diffuseColor.xyz * attenuation;
+    vec3 specularColour = specularColor.xyz * attenuation;
+
+    float diffuseLambert = max(dot(l, n), 0.0);
+
+    lightColor = lightColor + vec4(diffuseLambert * diffuseColour * diffuseIntensity
+      + specularColour * specular * specularIntensity, 1.0);
+  }
+
+  lightColor = lightColor + ambientColor * ambientIntensity;
+  vec4 materialColor = vec4(baseColor.rgb * lightColor.rgb, baseColor.a);
+  gl_FragColor = materialColor;
+}
+
+</script>
+
+  <script type="text/javascript" src="common/webgl-utils.js"></script>
+  <script type="text/javascript" src="common/initShaders.js"></script>
+  <script type="text/javascript" src="common/MV.js"></script>
+  <script type="text/javascript" src="assignment4-shapes.js"></script>
+  <script type="text/javascript" src="assignment4.js"></script>
+  <script type="text/javascript" src="common/jquery-1.11.3.min.js"></script>
+  <script type="text/javascript" src="common/spectrum.js"></script>
+  <link rel="stylesheet" href="common/spectrum.css" />
+
+  <style type="text/css">
+    html, body { margin: 0; padding: 0; background-color: rgb(90, 90, 90); color: white;
+      font-family: Arial, sans-serif; font-size: 12px; }
+    .form-group { border: 1px solid white; padding: 3px; margin: 2px 0; }
+    .form-group h3 { margin: 0;  font-size: 14px; }
+    .form-element {  }
+    label { display: inline-block; width: 120px; vertical-align: middle; line-height: 2.3em; }
+    input, select { display: inline-block; vertical-align: middle; line-height: 2.3em; }
+    input, select, button { font-size: 12px; }
+    .slider { width: 250px; }
+    .left-form { float: left; padding: 10px; min-width: 420px; max-width: 420px; }
+    canvas { float: left; margin: 0; padding: 0; cursor: crosshair; }
+    a { color: white; }
+  </style>
+</head>
+
+<body>
+<div class="left-form">
+  <h2>Objects</h2>
+
+  <div class="form-element">
+    <label for="add-object">&nbsp;</label>
+    <button id="add-object">Add object</button>
+    <button id="remove-object">Remove object</button>
+  </div>
+  <div class="form-element">
+    <label for="current-object">Current object:</label>
+    <select id="current-object">
+    </select>
+  </div>
+  <div class="form-element">
+    <label for="shape">Shape</label>
+    <select id="shape">
+      <option value="sphere" selected="selected">Sphere</option>
+      <option value="cylinder">Cylinder</option>
+      <option value="cone">Cone</option>
+      <option value="cube">Cube</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <h3>Material properties</h3>
+    <div class="form-element">
+      <label for="surfaceColor">Surface color</label>
+      <input type="text" id="surfaceColor">
+    </div>
+    <!--
+    <div class="form-element">
+      <label for="ambientColor">Material ambient</label>
+      <input type="text" id="ambientColor">
+    </div>
+    -->
+    <div class="form-element">
+      <label for="diffuseColor">Material diffuse</label>
+      <input type="text" id="diffuseColor">
+    </div>
+    <div class="form-element">
+      <label for="specularColor">Material specular</label>
+      <input type="text" id="specularColor">
+    </div>
+
+    <div class="form-element">
+      <label for="materialShininess">Material shininess</label>
+      <input type="range" class="slider" id="materialShininess" min="0.1" max="10" step="0.1" value="1">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <h3>Scale</h3>
+    <div class="form-element">
+      <label for="scale">Scale</label>
+      <input type="range" class="slider" id="scale" min="0.01" max="2.0" step="0.01" value="0">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <h3>Rotation</h3>
+    <div class="form-element">
+      <label for="rotate-x">Rotate x</label>
+      <input type="range" class="slider" id="rotate-x" min="0" max="360" step="1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="rotate-y">Rotate y</label>
+      <input type="range" class="slider" id="rotate-y" min="0" max="360" step="1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="rotate-z">Rotate z</label>
+      <input type="range" class="slider" id="rotate-z" min="0" max="360" step="1" value="0">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <h3>Translation</h3>
+    <div class="form-element">
+      <label for="translate-x">Translate x</label>
+      <input type="range" class="slider" id="translate-x" min="-2.0" max="2.0" step="0.001" value="0">
+    </div>
+    <div class="form-element">
+      <label for="translate-y">Translate y</label>
+      <input type="range" class="slider" id="translate-y" min="-2.0" max="2.0" step="0.001" value="0">
+    </div>
+    <div class="form-element">
+      <label for="translate-z">Translate z</label>
+      <input type="range" class="slider" id="translate-z" min="-2.0" max="2.0" step="0.001" value="0">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <h3>Camera</h3>
+    <div class="form-element">
+      <label for="cameraAnimated">Animate</label>
+      <input type="checkbox" id="cameraAnimated" checked>
+    </div>
+    <div class="form-element">
+      <label for="cameraAngleY">Camera rotation</label>
+      <input type="range" class="slider" id="cameraAngleY" min="0" max="360" step="1" value="45">
+    </div>
+  </div>
+
+</div>
+
+<canvas id="gl-canvas" width="700" height="700">
+  Oops ... your browser doesn"t support the HTML5 canvas element
+</canvas>
+
+<div class="left-form">
+
+  <h2>Lighting</h2>
+
+  <div class="form-group">
+    <h3>Distance attenuation</h3>
+    <div class="form-element">
+      <label for="constantAttenuation">Constant attenuation</label>
+      <input type="range" class="slider" id="constantAttenuation" min="0.001" max="0.05" step="0.001" value="0">
+    </div>
+    <div class="form-element">
+      <label for="linearAttenuation">Linear attenuation</label>
+      <input type="range" class="slider" id="linearAttenuation" min="0" max="0.05" step="0.001" value="0">
+    </div>
+    <div class="form-element">
+      <label for="quadraticAttenuation">Quadratic attenuation</label>
+      <input type="range" class="slider" id="quadraticAttenuation" min="0" max="0.05" step="0.001" value="0">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <h3>Light intensity</h3>
+    <div class="form-element">
+      <label for="ambientIntensity">Ambient Intensity</label>
+      <input type="range" class="slider" id="ambientIntensity" min="0" max="2" step="0.05" value="0.6">
+    </div>
+    <div class="form-element">
+      <label for="diffuseIntensity">Diffuse Intensity</label>
+      <input type="range" class="slider" id="diffuseIntensity" min="0" max="2" step="0.05" value="0.6">
+    </div>
+    <div class="form-element">
+      <label for="specularIntensity">Specular Intensity</label>
+      <input type="range" class="slider" id="specularIntensity" min="0" max="2" step="0.05" value="0.6">
+    </div>
+  </div>
+
+  <div class="form-element">
+    <label for="currentLight">Current light:</label>
+    <select id="currentLight">
+      <option value="0">Light 1</option>
+      <option value="1">Light 2</option>
+      <option value="2">Light 3</option>
+      <option value="3">Light 4</option>
+    </select>
+  </div>
+
+  <div class="form-element">
+    <label for="lightOnOff">Enabled</label>
+    <input type="checkbox" id="lightOnOff" checked>
+  </div>
+
+  <div class="form-element">
+    <label for="lightAnimated">Animate</label>
+    <input type="checkbox" id="lightAnimated">
+  </div>
+
+  <div class="form-element">
+    <label for="lightSpeed">Animation speed</label>
+    <input type="range" class="slider" id="lightSpeed" min="-10" max="10" step="0.1" value="0">
+  </div>
+
+  <div class="form-group">
+    <h3>Light rotation</h3>
+    <div class="form-element">
+      <label for="lightTheta">Theta</label>
+      <input type="range" class="slider" id="lightTheta" min="0" max="360" step="0.1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="lightPhi">Phi</label>
+      <input type="range" class="slider" id="lightPhi" min="0" max="360" step="0.1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="lightRadius">Radius</label>
+      <input type="range" class="slider" id="lightRadius" min="4" max="30.0" step="0.1" value="10">
+    </div>
+  </div>
+
+  <div class="form-element">
+    <h2>Instructions</h2>
+    <p>
+      Click 'Add object' to add an object to the canvas, then use the menu options to change its properties.
+      Select a 'Current object' to change objects added earlier.
+    </p>
+    <p>
+      Note: You <em>can</em> also click and drag on the canvas to move the object along the x and y axis, but the results
+      might be unexpected due to camera rotation.
+    </p>
+    <p>
+      Ctrl+Click and drag on the canvas is an alternative way to rotate an object along the x and y axis.
+    </p>
+  </div>
+  <div class="footer">
+    Tested in Chrome and Firefox.<br>
+    Color picker: <a href="https://bgrins.github.io/spectrum/">https://bgrins.github.io/spectrum/</a>
+  </div>
+
+
+</div>
+
+
+</body>
+</html>

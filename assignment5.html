@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <script id="vertex-shader" type="x-shader/x-vertex">
+precision mediump float;
+
+attribute vec4 vPosition;
+attribute vec2 vTextureCoord;
+attribute vec3 vNormal;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+
+varying vec2 fTextureCoord;
+varying vec3 N;
+varying vec3 fPosition;
+
+void main() {
+  gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+  fTextureCoord = vTextureCoord;
+  fPosition = vec3(projectionMatrix * modelViewMatrix * vPosition);
+  N = vNormal;
+}
+
+  </script>
+
+  <script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+uniform mat3 normalMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+
+uniform sampler2D uSampler;
+
+varying vec2 fTextureCoord;
+varying vec3 fPosition;
+varying vec3 N;
+
+void main() {
+  // gl_FragColor = texture2D(uSampler, vec2(fTextureCoord.st));
+
+  vec3 pointLightPosition = vec3(-3.0, 3.0, -6.0);
+
+  vec3 pointLightDirection = vec3(pointLightPosition.xyz - fPosition.xyz);
+  float d = length(pointLightDirection);
+  float attenuation = 1.0/(.01 + .01*d+.02*d*d);
+
+  mat4 mvp = projectionMatrix * modelViewMatrix;
+
+  vec3 L = vec3(vec4(pointLightDirection, 1.0));
+  vec3 V = -vec3(vec4(fPosition,1.0));
+
+  vec3 l = normalize(L);
+  vec3 n = normalize(normalMatrix * N);
+  vec3 v = normalize(V);
+
+  vec3 R = reflect(l, n);
+
+  float diffuseLambert = dot(l,n);
+  float Roughness = 1.0;
+  float AmbientIntensity = 0.6;
+  vec3 DiffuseLightIntensity = vec3(0.9, 0.9, 0.9);
+  float SpecularIntensity = 0.5;
+  float shininess = 128.0;
+
+  float specular = pow( max(0.0,dot(R,v)), shininess);
+
+  vec3 AmbientColour = vec3(0.8, 0.8, 0.8)*attenuation;
+  vec3 DiffuseMaterialColour = vec3(1.0, 1.0, 1.0).xyz*attenuation;
+  vec3 SpecularColour = vec3(1.0, 1.0, 1.0)*attenuation;
+
+  vec4 lightColor = vec4(AmbientColour * AmbientIntensity +
+                  diffuseLambert * DiffuseMaterialColour*DiffuseLightIntensity +
+                  SpecularColour * specular*SpecularIntensity, 1.0);
+  vec4 textureColor = texture2D(uSampler, vec2(fTextureCoord.st));
+  vec4 materialColor = vec4(textureColor.rgb * lightColor.rgb, textureColor.a);
+  gl_FragColor = materialColor;
+}
+</script>
+
+  <script type="text/javascript" src="common/webgl-utils.js"></script>
+  <script type="text/javascript" src="common/initShaders.js"></script>
+  <script type="text/javascript" src="common/MV.js"></script>
+  <script type="text/javascript" src="assignment5-shapes.js"></script>
+  <script type="text/javascript" src="assignment5.js"></script>
+  <script type="text/javascript" src="common/jquery-1.11.3.min.js"></script>
+
+  <style type="text/css">
+    html, body { margin: 0; padding: 0; background-color: rgb(90, 90, 90); color: white;
+      font-family: Arial, sans-serif; font-size: 12px; }
+    .form-group { border: 1px solid white; padding: 3px; margin: 2px 0; }
+    .form-group h3 { margin: 0;  font-size: 14px; }
+    .form-element {  }
+    label { display: inline-block; width: 120px; vertical-align: middle; line-height: 2.3em; }
+    input, select { display: inline-block; vertical-align: middle; line-height: 2.3em; }
+    input, select, button { font-size: 12px; }
+    .slider { width: 250px; }
+    .left-form { float: left; padding: 10px; min-width: 420px; max-width: 420px; }
+    canvas { float: left; margin: 0; padding: 0; cursor: crosshair; }
+    a { color: white; }
+    img { display: none; }
+  </style>
+</head>
+
+<body>
+<div class="left-form">
+  <h2>Objects</h2>
+
+  <div class="form-element">
+    <label for="texture">Texture</label>
+    <select id="texture">
+      <option value="0"  selected="selected">Earth</option>
+      <option value="1">Checkerboard pattern</option>
+    </select>
+  </div>
+
+  <div class="form-element">
+    <label for="textureMapping">Type of mapping</label>
+    <select id="textureMapping">
+      <option value="0"  selected="selected">Regular</option>
+      <option value="1">Variant 1</option>
+      <option value="2">Variant 2</option>
+      <option value="3">Randomize</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+
+    <h3>Rotation</h3>
+    <div class="form-element">
+      <label for="autorotateY">Animate y-axis</label>
+      <input type="checkbox" id="autorotateY" checked>
+    </div>
+    <div class="form-element">
+      <label for="rotateX">Rotate x</label>
+      <input type="range" class="slider" id="rotateX" min="0" max="360" step="1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="rotateY">Rotate y</label>
+      <input type="range" class="slider" id="rotateY" min="0" max="360" step="1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="rotateZ">Rotate z</label>
+      <input type="range" class="slider" id="rotateZ" min="0" max="360" step="1" value="0">
+    </div>
+  </div>
+
+</div>
+
+<canvas id="gl-canvas" width="800" height="800">
+  Oops ... your browser doesn"t support the HTML5 canvas element
+</canvas>
+<img id="earth" src="images/earth-highres.jpg">
+
+</body>
+</html>
