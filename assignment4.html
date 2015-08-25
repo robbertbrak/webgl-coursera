@@ -221,15 +221,15 @@ void main() {
     <h3>Distance attenuation</h3>
     <div class="form-element">
       <label for="constantAttenuation">Constant attenuation</label>
-      <input type="range" class="slider" id="constantAttenuation" min="0.001" max="0.2" step="0.001" value="0">
+      <input type="range" class="slider" id="constantAttenuation" min="0.001" max="0.05" step="0.001" value="0">
     </div>
     <div class="form-element">
       <label for="linearAttenuation">Linear attenuation</label>
-      <input type="range" class="slider" id="linearAttenuation" min="0" max="0.2" step="0.001" value="0">
+      <input type="range" class="slider" id="linearAttenuation" min="0" max="0.05" step="0.001" value="0">
     </div>
     <div class="form-element">
       <label for="quadraticAttenuation">Quadratic attenuation</label>
-      <input type="range" class="slider" id="quadraticAttenuation" min="0" max="0.2" step="0.001" value="0">
+      <input type="range" class="slider" id="quadraticAttenuation" min="0" max="0.05" step="0.001" value="0">
     </div>
   </div>
 
@@ -270,18 +270,18 @@ void main() {
   </div>
 
   <div class="form-group">
-    <h3>Light position</h3>
+    <h3>Light rotation</h3>
     <div class="form-element">
-      <label for="lightX">x</label>
-      <input type="range" class="slider" id="lightX" min="-10.0" max="10.0" step="0.01" value="0">
+      <label for="lightTheta">Theta</label>
+      <input type="range" class="slider" id="lightTheta" min="0" max="360" step="0.1" value="0">
     </div>
     <div class="form-element">
-      <label for="lightY">y</label>
-      <input type="range" class="slider" id="lightY" min="-10.0" max="10.0" step="0.01" value="0">
+      <label for="lightPhi">Phi</label>
+      <input type="range" class="slider" id="lightPhi" min="0" max="360" step="0.1" value="0">
     </div>
     <div class="form-element">
-      <label for="lightZ">z</label>
-      <input type="range" class="slider" id="lightZ" min="-10.0" max="10.0" step="0.01" value="0">
+      <label for="lightRadius">Radius</label>
+      <input type="range" class="slider" id="lightRadius" min="4" max="30.0" step="0.1" value="10">
     </div>
   </div>
 

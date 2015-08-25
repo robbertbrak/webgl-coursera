@@ -30,10 +30,6 @@ var up = [0, 1, 0];
 var lights = [];
 var currentLight = {};
 
-var lightAmbient = vec4(0.4, 0.4, 0.4, 1.0 );
-var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
-var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
-
 var ambientColor = vec4( 1.0, 1.0, 1.0, 1.0 );
 var diffuseColor = vec4( 0.8, 0.8, 0.8, 1.0);
 var specularColor = vec4( 1.0, 1.0, 1.0, 1.0 );
@@ -190,46 +186,44 @@ function createArrow(a, r, color) {
 function initLights() {
   for (var i = 0; i < 4; i++) {
     var light = {};
-    light.position = vec4(random(0, 3), random(0, 3), random(0, 3), 0);
-    light.angle = [0, 0, 0];
     light.diffuse = vec4(1.0, 1.0, 1.0, 1.0);
     light.specular = vec4(1.0, 1.0, 1.0, 1.0);
     light.animate = false;
-    light.lightBulb = {
-      shape: shapes["sphere"],
-      x: light.position[0], y: light.position[1], z: light.position[2],
-      rotateX: 0, rotateY: 0, rotateZ: 0,
-      scaleX: 0.03, scaleY: 0.03, scaleZ: 0.03,
-      surfaceColor: vec4(1, 1, 1, 1),
-      ambientColor: ambientColor,
-      diffuseColor: diffuseColor,
-      specularColor: specularColor,
-      materialShininess: 128
-    };
+    light.theta = random(0, 360);
+    light.phi = random(0, 360);
+    light.radius = random(6, 16);
+    light.position = vec4(0, 0, 0, 0);
+    calculateLightPosition(light);
 
     lights.push(light);
   }
   lights[0].position[3] = 1;
-  lights[0].angle = [45, 90, 270];
   lights[0].animate = true;
 
-  lights[1].position[3] = 1;
-  lights[1].angle = [180, 180, 0];
-  lights[1].animate = true;
-
   currentLight = lights[0];
-  changeCurrentLight();
+  updateLightUI(currentLight);
+}
+
+function calculateLightPosition(currentLight) {
+  var cosTheta = Math.cos(radians(currentLight.theta));
+  var sinTheta = Math.sin(radians(currentLight.theta));
+  var cosPhi = Math.cos(radians(currentLight.phi));
+  var sinPhi = Math.sin(radians(currentLight.phi));
+  currentLight.position[0] = currentLight.radius * cosTheta * sinPhi;
+  currentLight.position[1] = currentLight.radius * sinTheta * sinPhi;
+  currentLight.position[2] = currentLight.radius * cosPhi;
 }
 
 function moveLights() {
   for (var i = 0; i < lights.length; i++) {
-    if (!lights[i].animate) {
-      continue;
+    var light = lights[i];
+    if (light.animate) {
+      light.phi = (light.phi + 1) % 360;
+      if (random(0, 100) < 5) {
+        light.theta = (light.theta + 1) % 360;
+      }
     }
-    for (var j = 0; j < 3; j++) {
-      lights[i].angle[j] += random(0, 1);
-      lights[i].position[j] = 10 * Math.sin(radians(lights[i].angle[j]));
-    }
+    calculateLightPosition(light);
   }
 
   var lightPositions = [];
@@ -237,11 +231,9 @@ function moveLights() {
     lightPositions.push(lights[i].position);
   }
 
-  $("#lightX").val(currentLight.position[0]);
-  $("#lightY").val(currentLight.position[1]);
-  $("#lightZ").val(currentLight.position[2]);
-
   gl.uniform4fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPositions));
+
+  updateLightUI(currentLight);
 }
 
 
@@ -367,7 +359,7 @@ function initEventListeners() {
 
   $("#currentLight").change(function() {
     currentLight = lights[$(this).val()];
-    changeCurrentLight();
+    updateLightUI(currentLight);
   });
 
   $("#lightOnOff").click(function() {
@@ -375,14 +367,16 @@ function initEventListeners() {
     else currentLight.position[3] = 0;
   });
 
-  $("#lightAnimated").click(function() { currentLight.animate = this.checked; });
+  $("#lightAnimated").click(function() {
+    currentLight.animate = this.checked;
+  });
 
-  $("#lightX").on("input", function() { currentLight.position[0] = $(this).val(); });
-  $("#lightX").on("change", function() { currentLight.position[0] = $(this).val(); });
-  $("#lightY").on("input", function() { currentLight.position[1] = $(this).val(); });
-  $("#lightY").on("change", function() { currentLight.position[1] = $(this).val(); });
-  $("#lightZ").on("input", function() { currentLight.position[2] = $(this).val(); });
-  $("#lightZ").on("change", function() { currentLight.position[2] = $(this).val(); });
+  $("#lightTheta").on("input", function() { currentLight.theta = $(this).val(); });
+  $("#lightTheta").on("change", function() { currentLight.theta = $(this).val(); });
+  $("#lightPhi").on("input", function() { currentLight.phi = $(this).val(); });
+  $("#lightPhi").on("change", function() { currentLight.phi = $(this).val(); });
+  $("#lightRadius").on("input", function() { currentLight.radius = $(this).val(); });
+  $("#lightRadius").on("change", function() { currentLight.radius = $(this).val(); });
 
   $("#gl-canvas").mousedown(function(event) {
     mouseDown = true;
@@ -433,10 +427,10 @@ function initEventListeners() {
 
 }
 
-function changeCurrentLight() {
-  $("#lightX").val(currentLight.position[0]);
-  $("#lightY").val(currentLight.position[1]);
-  $("#lightZ").val(currentLight.position[2]);
+function updateLightUI(currentLight) {
+  $("#lightTheta").val(currentLight.theta);
+  $("#lightPhi").val(currentLight.phi);
+  $("#lightRadius").val(currentLight.radius);
   $("#lightOnOff").prop('checked', currentLight.position[3] == 1);
   $("#lightAnimated").prop('checked', currentLight.animate);
 }
