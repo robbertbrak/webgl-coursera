@@ -10,17 +10,20 @@ attribute vec2 vTextureCoord;
 attribute vec3 vNormal;
 
 uniform mat4 modelViewMatrix;
+uniform mat4 lookatMatrix;
 uniform mat4 projectionMatrix;
 
 varying vec2 fTextureCoord;
 varying vec3 N;
 varying vec3 fPosition;
+varying vec3 eyeR;
 
 void main() {
-  gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+  gl_Position = projectionMatrix * lookatMatrix * modelViewMatrix * vPosition;
   fTextureCoord = vTextureCoord;
-  fPosition = vec3(projectionMatrix * modelViewMatrix * vPosition);
+  fPosition = vec3(projectionMatrix * lookatMatrix * modelViewMatrix * vPosition);
   N = vNormal;
+  eyeR = reflect(vPosition.xyz, N);
 }
 
   </script>
@@ -29,52 +32,51 @@ void main() {
 precision mediump float;
 
 uniform mat3 normalMatrix;
+uniform mat4 lookatMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 
 uniform sampler2D uSampler;
+uniform samplerCube uSamplerCube;
+uniform int useCube;
 
 varying vec2 fTextureCoord;
 varying vec3 fPosition;
 varying vec3 N;
+varying vec3 eyeR;
 
 void main() {
-  // gl_FragColor = texture2D(uSampler, vec2(fTextureCoord.st));
-
-  vec3 pointLightPosition = vec3(-3.0, 3.0, -6.0);
-
+  vec3 pointLightPosition = vec3(-3.0, 3.0, 6.0);
   vec3 pointLightDirection = vec3(pointLightPosition.xyz - fPosition.xyz);
   float d = length(pointLightDirection);
-  float attenuation = 1.0/(.01 + .01*d+.02*d*d);
+  float attenuation = 1.0 / (0.01 + 0.01 * d + 0.03 * d * d);
 
-  mat4 mvp = projectionMatrix * modelViewMatrix;
-
-  vec3 L = vec3(vec4(pointLightDirection, 1.0));
-  vec3 V = -vec3(vec4(fPosition,1.0));
-
-  vec3 l = normalize(L);
   vec3 n = normalize(normalMatrix * N);
-  vec3 v = normalize(V);
-
+  vec3 l = normalize(vec4(pointLightDirection, 1.0)).xyz;
+  vec3 v = - normalize(vec4(fPosition, 1.0)).xyz;
   vec3 R = reflect(l, n);
+  float specular = pow(max(dot(R, v), 0.0), 10.0);
 
-  float diffuseLambert = dot(l,n);
-  float Roughness = 1.0;
-  float AmbientIntensity = 0.6;
-  vec3 DiffuseLightIntensity = vec3(0.9, 0.9, 0.9);
-  float SpecularIntensity = 0.5;
-  float shininess = 128.0;
+  vec3 ambientColor = vec3(0.6, 0.6, 0.6) * attenuation;
+  vec3 diffuseColor = vec3(1.0, 1.0, 1.0) * attenuation;
+  vec3 specularColor = vec3(1.0, 1.0, 1.0) * attenuation;
 
-  float specular = pow( max(0.0,dot(R,v)), shininess);
+  float ambientIntensity = 0.3;
+  float specularIntensity = 0.8;
+  float diffuseIntensity = 0.9;
 
-  vec3 AmbientColour = vec3(0.8, 0.8, 0.8)*attenuation;
-  vec3 DiffuseMaterialColour = vec3(1.0, 1.0, 1.0).xyz*attenuation;
-  vec3 SpecularColour = vec3(1.0, 1.0, 1.0)*attenuation;
+  float diffuseLambert = max(dot(l, n), 0.0);
 
-  vec4 lightColor = vec4(AmbientColour * AmbientIntensity +
-                  diffuseLambert * DiffuseMaterialColour*DiffuseLightIntensity +
-                  SpecularColour * specular*SpecularIntensity, 1.0);
-  vec4 textureColor = texture2D(uSampler, vec2(fTextureCoord.st));
+  vec4 lightColor = vec4(ambientColor * ambientIntensity + diffuseLambert * diffuseColor * diffuseIntensity
+    + specularColor * specular * specularIntensity, 1.0);
+
+  vec4 textureColor;
+  if (useCube == 1) {
+    textureColor = textureCube(uSamplerCube, eyeR);
+  } else {
+    textureColor = texture2D(uSampler, vec2(fTextureCoord.st));
+  }
+
   vec4 materialColor = vec4(textureColor.rgb * lightColor.rgb, textureColor.a);
   gl_FragColor = materialColor;
 }
@@ -113,12 +115,13 @@ void main() {
     <select id="texture">
       <option value="0"  selected="selected">Earth</option>
       <option value="1">Checkerboard pattern</option>
+      <option value="2">Cube map</option>
     </select>
   </div>
 
   <div class="form-element">
-    <label for="textureMapping">Type of mapping</label>
-    <select id="textureMapping">
+    <label for="cubemapping">Type of mapping</label>
+    <select id="cubemapping">
       <option value="0"  selected="selected">Regular</option>
       <option value="1">Variant 1</option>
       <option value="2">Variant 2</option>
@@ -153,6 +156,12 @@ void main() {
   Oops ... your browser doesn"t support the HTML5 canvas element
 </canvas>
 <img id="earth" src="images/earth-highres.jpg">
+<img id="cubemap-negx" src="images/negx.jpg">
+<img id="cubemap-negy" src="images/negy.jpg">
+<img id="cubemap-negz" src="images/negz.jpg">
+<img id="cubemap-posx" src="images/posx.jpg">
+<img id="cubemap-posy" src="images/posy.jpg">
+<img id="cubemap-posz" src="images/posz.jpg">
 
 </body>
 </html>

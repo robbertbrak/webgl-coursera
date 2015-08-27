@@ -29,10 +29,9 @@ function createSphere(gl, typeOfMapping) {
       var y = cosTheta;
       var z = sinPhi * sinTheta;
 
-
       if (typeOfMapping == REGULAR_MAPPING) {
         var tx = (phi + Math.PI) / (2 * Math.PI);
-        var ty = -theta / Math.PI;
+        var ty = theta / Math.PI;
         texCoords1.push(vec2(tx, ty));
       } else if (typeOfMapping == TYPE1_MAPPING) {
         texCoords1.push(vec2((x + 1.0) / 2, (y + 1.0) / 2));
