@@ -10,17 +10,38 @@ var OUTLINE = 2;
 var objects = [];
 var textures = [];
 var textureImages = [];
+var textureTypes = [];
+
+var USE_CUBE_MAP = 1;
+var USE_TEXTURE_2D = 0;
+
 var currentObject = {};
 var autorotateY = true;
 
+var numChecks = 16;
+var checkColor = [ 90, 90, 90 ];
+
 var EARTH_TEXTURE = 0;
 var CHECKERBOARD_TEXTURE = 1;
+var CUBE_MAP = 2;
 
 var textureMappings = [REGULAR_MAPPING, TYPE1_MAPPING, TYPE2_MAPPING, TYPE3_MAPPING];
 
 var modelViewMatrixLoc;
 var projectionMatrixLoc;
 var normalMatrixLoc;
+var lookatMatrixLoc;
+
+var camera = {
+  theta: 1,
+  phi: 10,
+  radius: 4
+};
+
+var eye = [0, 0, 2];
+var at = [0, 0, 0];
+var up = [0, 1, 0];
+var lookatMatrix;
 
 var shapes = {};
 
@@ -30,16 +51,19 @@ window.onload = function init() {
   modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
   normalMatrixLoc = gl.getUniformLocation( program, "normalMatrix" );
   projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
+  lookatMatrixLoc = gl.getUniformLocation( program, "lookatMatrix" );
 
   initShapes();
   loadTexture("earth", EARTH_TEXTURE);
-  createCheckerboard();
+  createCheckerboard(16);
+  loadCubeMap(["cubemap-posx", "cubemap-negy", "cubemap-posz", "cubemap-negx", "cubemap-posy", "cubemap-negz"], CUBE_MAP);
+
   objects.push({
     shape: shapes.sphere[REGULAR_MAPPING],
     texture: EARTH_TEXTURE,
     scale: 0.7,
-    x: -0, y: 0, z: 0,
-    rotateX: 25, rotateY: 270, rotateZ: 0
+    x: 0, y: 0, z: 0,
+    rotateX: 155, rotateY: 270, rotateZ: 0
   });
   currentObject = objects[0];
 
@@ -50,12 +74,17 @@ window.onload = function init() {
 function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  var projectionMatrix = ortho(-1, 1, -1, 1, 1, -1);
+  var projectionMatrix = perspective(30, 1, 1, 20);
+
+  // camera.phi = (camera.phi + 1) % 360;
+  calculateEyePosition();
+  lookatMatrix = lookAt(eye, at, up);
   gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
+  gl.uniformMatrix4fv(lookatMatrixLoc, false, flatten(lookatMatrix));
 
   if (autorotateY) {
     $("#rotateY").val(currentObject.rotateY);
-    changeRotation((currentObject.rotateY + 1) % 360, "Y");
+    changeRotation((parseFloat(currentObject.rotateY) + 1) % 360, "Y");
   }
 
   for (var i = 0; i < objects.length; i++) {
@@ -82,11 +111,17 @@ function renderObject(object) {
     gl.vertexAttribPointer(vNormal, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vNormal);
 
-    gl.uniform1i(gl.getUniformLocation(program, "uSampler"), object.texture);
-    var vertexTexCoordAttribute = gl.getAttribLocation(program, "vTextureCoord");
-    gl.bindBuffer(gl.ARRAY_BUFFER, shape.textures[j].buffer);
-    gl.enableVertexAttribArray(vertexTexCoordAttribute);
-    gl.vertexAttribPointer(vertexTexCoordAttribute, 2, gl.FLOAT, false, 0, 0);
+    var textureType = textureTypes[object.texture];
+    gl.uniform1i(gl.getUniformLocation(program, "useCube"), textureType);
+    if (textureType == USE_CUBE_MAP) {
+      gl.uniform1i(gl.getUniformLocation(program, "uSamplerCube"), object.texture);
+    } else {
+      gl.uniform1i(gl.getUniformLocation(program, "uSampler"), object.texture);
+      var vertexTexCoordAttribute = gl.getAttribLocation(program, "vTextureCoord");
+      gl.bindBuffer(gl.ARRAY_BUFFER, shape.textures[j].buffer);
+      gl.enableVertexAttribArray(vertexTexCoordAttribute);
+      gl.vertexAttribPointer(vertexTexCoordAttribute, 2, gl.FLOAT, false, 0, 0);
+    }
 
     var bufferInfo = shape.buffers[j];
     gl.bindBuffer(gl.ARRAY_BUFFER, bufferInfo.buffer);
@@ -108,6 +143,17 @@ function initShapes() {
     shapes.sphere[textureMappings[i]] = sphere;
   }
 
+}
+
+function calculateEyePosition() {
+  var cosTheta = Math.cos(radians(camera.theta));
+  var sinTheta = Math.sin(radians(camera.theta));
+  var cosPhi = Math.cos(radians(camera.phi));
+  var sinPhi = Math.sin(radians(camera.phi));
+  var radius = parseFloat(camera.radius);
+  eye[0] = radius * cosTheta * sinPhi;
+  eye[1] = radius * sinTheta * sinPhi;
+  eye[2] = radius * cosPhi;
 }
 
 function getRotationMatrix(x, y, z) {
@@ -152,10 +198,42 @@ function loadTexture(id, i) {
   setupTexture(i);
 }
 
+function loadCubeMap(ids, i) {
+  var cubeMap = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE0 + i);
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+  for (var j = 0; j < ids.length; j++) {
+    textureImages[j + i] = document.getElementById(ids[j]);
+  }
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureImages[i + 0]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureImages[i + 1]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureImages[i + 2]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureImages[i + 3]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureImages[i + 4]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureImages[i + 5]);
+
+  gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.REPEAT);
+
+  textures[i] = cubeMap;
+  textureTypes[i] = USE_CUBE_MAP;
+
+  if (!gl.isTexture(textures[i])) {
+    console.error("Error: Texture is invalid");
+  }
+
+}
+
 function setupTexture(i, options) {
   options = options || {};
   gl.activeTexture(gl.TEXTURE0 + i);
   textures[i] = gl.createTexture();
+  textureTypes[i] = USE_TEXTURE_2D;
   gl.bindTexture(gl.TEXTURE_2D, textures[i]);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   if (options.texSize) {
@@ -176,7 +254,6 @@ function setupTexture(i, options) {
 
 function createCheckerboard() {
   var texSize = 1024;
-  var numChecks = 32;
   var image = new Uint8Array(4*texSize*texSize);
   var c = [0, 0, 0];
 
@@ -186,9 +263,9 @@ function createCheckerboard() {
       var patchx = Math.floor(i/(texSize/numChecks));
       var patchy = Math.floor(j/(texSize/numChecks));
       if (patchx % 2 ^ patchy % 2) {
-        c = [ 255, 255, 255];
+        c = [255, 255, 255]; // white
       } else {
-        c = [ 128, 60, 0];
+        c = checkColor;
       }
       image[4*i*texSize+4*j] = c[0];
       image[4*i*texSize+4*j+1] = c[1];
@@ -202,7 +279,13 @@ function createCheckerboard() {
 }
 
 function initEventListeners() {
-  $("#texture").change(function() { currentObject.texture = $(this).val(); });
+  $("#texture").change(function() {
+    currentObject.texture = $(this).val();
+    $("#textureMapping").prop("disabled", currentObject.texture == CUBE_MAP);
+    if (currentObject.texture == CUBE_MAP && autorotateY) {
+      $("#autorotateY").click();
+    }
+  });
   $("#textureMapping").change(function() { currentObject.shape = shapes.sphere[$(this).val()]; });
   $("#rotateX").on("input", function() { changeRotation($(this).val(), "X") });
   $("#rotateY").on("input", function() { changeRotation($(this).val(), "Y") });
@@ -210,16 +293,57 @@ function initEventListeners() {
   $("#rotateX").on("change", function() { changeRotation($(this).val(), "X") });
   $("#rotateY").on("change", function() { changeRotation($(this).val(), "Y") });
   $("#rotateZ").on("change", function() { changeRotation($(this).val(), "Z") });
+  $("#numChecks").on("input", function() { numChecks = parseInt($(this).val()); createCheckerboard() });
+  $("#numChecks").on("change", function() { numChecks = parseInt($(this).val()); createCheckerboard() });
+  addColorPicker("checkColor", "checkColor");
+
   $("#autorotateY").click(function() {
     autorotateY = this.checked;
-    $("#rotateY").prop("disabled", this.checked);
   });
 
   $("#rotateX").val(currentObject.rotateX);
   $("#rotateY").val(currentObject.rotateY);
   $("#rotateZ").val(currentObject.rotateZ);
+  $("#numChecks").val(numChecks);
 }
 
 function changeRotation(val, axis) {
   currentObject["rotate" + axis] = val;
+}
+
+function addColorPicker(elementId, objectProperty) {
+  $("#" + elementId).spectrum({
+    color: toColorPicker(checkColor),
+    showPalette: true,
+    palette: getPalette(),
+    change: function(color) {
+      var rgb = color.toRgb();
+      checkColor = vec3(rgb.r, rgb.g, rgb.b);
+      console.log(numChecks, checkColor);
+      createCheckerboard();
+    }
+  });
+}
+
+function toColorPicker(v) {
+  return tinycolor({ r: v[0], g: v[1], b: v[2] });
+}
+
+function getPalette() {
+  return [
+    ["rgb(0, 0, 0)", "rgb(67, 67, 67)", "rgb(102, 102, 102)",
+      "rgb(204, 204, 204)", "rgb(217, 217, 217)","rgb(255, 255, 255)"],
+    ["rgb(152, 0, 0)", "rgb(255, 0, 0)", "rgb(255, 153, 0)", "rgb(255, 255, 0)", "rgb(0, 255, 0)",
+      "rgb(0, 255, 255)", "rgb(74, 134, 232)", "rgb(0, 0, 255)", "rgb(153, 0, 255)", "rgb(255, 0, 255)"],
+    ["rgb(230, 184, 175)", "rgb(244, 204, 204)", "rgb(252, 229, 205)", "rgb(255, 242, 204)", "rgb(217, 234, 211)",
+      "rgb(208, 224, 227)", "rgb(201, 218, 248)", "rgb(207, 226, 243)", "rgb(217, 210, 233)", "rgb(234, 209, 220)"],
+    ["rgb(221, 126, 107)", "rgb(234, 153, 153)", "rgb(249, 203, 156)", "rgb(255, 229, 153)", "rgb(182, 215, 168)",
+      "rgb(162, 196, 201)", "rgb(164, 194, 244)", "rgb(159, 197, 232)", "rgb(180, 167, 214)", "rgb(213, 166, 189)"],
+    ["rgb(204, 65, 37)", "rgb(224, 102, 102)", "rgb(246, 178, 107)", "rgb(255, 217, 102)", "rgb(147, 196, 125)",
+      "rgb(118, 165, 175)", "rgb(109, 158, 235)", "rgb(111, 168, 220)", "rgb(142, 124, 195)", "rgb(194, 123, 160)"],
+    ["rgb(166, 28, 0)", "rgb(204, 0, 0)", "rgb(230, 145, 56)", "rgb(241, 194, 50)", "rgb(106, 168, 79)",
+      "rgb(69, 129, 142)", "rgb(60, 120, 216)", "rgb(61, 133, 198)", "rgb(103, 78, 167)", "rgb(166, 77, 121)"],
+    ["rgb(91, 15, 0)", "rgb(102, 0, 0)", "rgb(120, 63, 4)", "rgb(127, 96, 0)", "rgb(39, 78, 19)",
+      "rgb(12, 52, 61)", "rgb(28, 69, 135)", "rgb(7, 55, 99)", "rgb(32, 18, 77)", "rgb(76, 17, 48)"]
+  ];
 }
