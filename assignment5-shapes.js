@@ -34,10 +34,10 @@ function createSphere(gl, typeOfMapping) {
         var ty = theta / Math.PI;
         texCoords1.push(vec2(tx, ty));
       } else if (typeOfMapping == TYPE1_MAPPING) {
-        texCoords1.push(vec2((x + 1.0) / 2, (y + 1.0) / 2));
+        texCoords1.push(vec2((x + 1.0) / 2, - (y + 1.0) / 2));
       } else if (typeOfMapping == TYPE2_MAPPING) {
         var tx = (phi + Math.PI) / (2 * Math.PI);
-        texCoords1.push(vec2(tx, (y + 1.0) / 2));
+        texCoords1.push(vec2(tx, - (y + 1.0) / 2));
       } else if (typeOfMapping == TYPE3_MAPPING) {
         var tx = Math.random();
         var ty = Math.random();
@@ -66,6 +66,41 @@ function createSphere(gl, typeOfMapping) {
   shape.textures.push(createNormalBuffer(gl, texCoords));
   return shape;
 }
+
+function createCube(gl) {
+  var vertices = [
+    vec4(-0.5, -0.5,  0.5, 1.0),
+    vec4(-0.5,  0.5,  0.5, 1.0),
+    vec4( 0.5,  0.5,  0.5, 1.0),
+    vec4( 0.5, -0.5,  0.5, 1.0),
+    vec4(-0.5, -0.5, -0.5, 1.0),
+    vec4(-0.5,  0.5, -0.5, 1.0),
+    vec4( 0.5,  0.5, -0.5, 1.0),
+    vec4( 0.5, -0.5, -0.5, 1.0)
+  ];
+
+  var triangles = [];
+  var normals = [];
+  var texCoords = [];
+
+  var quads = [[1, 0, 3, 2], [2, 3, 7, 6], [3, 0, 4, 7], [6, 5, 1, 2], [4, 5, 6, 7], [5, 4, 0, 1]];
+  for (var i = 0; i < quads.length; i++) {
+    var quad = quads[i];
+    var indices = [ quad[0], quad[1], quad[2], quad[0], quad[2], quad[3] ];
+    var normal = computeNormal(vertices[indices[0]], vertices[indices[1]], vertices[indices[2]]);
+    for (var j = 0; j < indices.length; j++) {
+      triangles.push(vertices[indices[j]]);
+      normals.push(normal);
+    };
+    texCoords.push(0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0);
+  };
+  var shape = { buffers: [], normals: [] };
+  shape.buffers.push(createBuffer(gl, triangles, gl.TRIANGLES, SURFACE));
+  shape.normals.push(createNormalBuffer(gl, normals));
+  shape.textures.push(createNormalBuffer(gl, texCoords));
+  return shape;
+}
+
 
 function createNormalBuffer(gl, points) {
   var vBuffer = gl.createBuffer();

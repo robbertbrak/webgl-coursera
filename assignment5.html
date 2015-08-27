@@ -12,6 +12,7 @@ attribute vec3 vNormal;
 uniform mat4 modelViewMatrix;
 uniform mat4 lookatMatrix;
 uniform mat4 projectionMatrix;
+uniform mat3 normalMatrix;
 
 varying vec2 fTextureCoord;
 varying vec3 N;
@@ -23,7 +24,7 @@ void main() {
   fTextureCoord = vTextureCoord;
   fPosition = vec3(projectionMatrix * lookatMatrix * modelViewMatrix * vPosition);
   N = vNormal;
-  eyeR = reflect(vPosition.xyz, N);
+  eyeR = reflect(normalize(fPosition).xyz, normalize(normalMatrix * N));
 }
 
   </script>
@@ -61,7 +62,7 @@ void main() {
   vec3 diffuseColor = vec3(1.0, 1.0, 1.0) * attenuation;
   vec3 specularColor = vec3(1.0, 1.0, 1.0) * attenuation;
 
-  float ambientIntensity = 0.3;
+  float ambientIntensity = 0.4;
   float specularIntensity = 0.8;
   float diffuseIntensity = 0.9;
 
@@ -72,7 +73,7 @@ void main() {
 
   vec4 textureColor;
   if (useCube == 1) {
-    textureColor = textureCube(uSamplerCube, eyeR);
+    textureColor = textureCube(uSamplerCube, R);
   } else {
     textureColor = texture2D(uSampler, vec2(fTextureCoord.st));
   }
@@ -88,6 +89,8 @@ void main() {
   <script type="text/javascript" src="assignment5-shapes.js"></script>
   <script type="text/javascript" src="assignment5.js"></script>
   <script type="text/javascript" src="common/jquery-1.11.3.min.js"></script>
+  <script type="text/javascript" src="common/spectrum.js"></script>
+  <link rel="stylesheet" href="common/spectrum.css" />
 
   <style type="text/css">
     html, body { margin: 0; padding: 0; background-color: rgb(90, 90, 90); color: white;
@@ -120,13 +123,23 @@ void main() {
   </div>
 
   <div class="form-element">
-    <label for="cubemapping">Type of mapping</label>
-    <select id="cubemapping">
+    <label for="textureMapping">Type of mapping</label>
+    <select id="textureMapping">
       <option value="0"  selected="selected">Regular</option>
       <option value="1">Variant 1</option>
       <option value="2">Variant 2</option>
       <option value="3">Randomize</option>
     </select>
+  </div>
+
+  <div class="form-element">
+    <label for="numChecks">Number of checks</label>
+    <input type="range" class="slider" id="numChecks" min="2" max="64" step="2" value="16">
+  </div>
+
+  <div class="form-element">
+    <label for="checkColor">Color of checks</label>
+    <input type="text" id="checkColor">
   </div>
 
   <div class="form-group">
@@ -156,12 +169,20 @@ void main() {
   Oops ... your browser doesn"t support the HTML5 canvas element
 </canvas>
 <img id="earth" src="images/earth-highres.jpg">
+<img id="cubemap-negx" src="images/ame_shadow/shadowpeak_rt.jpg">
+<img id="cubemap-negy" src="images/ame_shadow/shadowpeak_dn.jpg">
+<img id="cubemap-negz" src="images/ame_shadow/shadowpeak_bk.jpg">
+<img id="cubemap-posx" src="images/ame_shadow/shadowpeak_lf.jpg">
+<img id="cubemap-posy" src="images/ame_shadow/shadowpeak_up.jpg">
+<img id="cubemap-posz" src="images/ame_shadow/shadowpeak_ft.jpg">
+<!--
 <img id="cubemap-negx" src="images/negx.jpg">
 <img id="cubemap-negy" src="images/negy.jpg">
 <img id="cubemap-negz" src="images/negz.jpg">
 <img id="cubemap-posx" src="images/posx.jpg">
 <img id="cubemap-posy" src="images/posy.jpg">
 <img id="cubemap-posz" src="images/posz.jpg">
+-->
 
 </body>
 </html>
