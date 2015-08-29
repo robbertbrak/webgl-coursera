@@ -31,6 +31,7 @@ var modelViewMatrixLoc;
 var projectionMatrixLoc;
 var normalMatrixLoc;
 var lookatMatrixLoc;
+var lightPosition = [ -2.0, 2.0, 3.0 ];
 
 var camera = {
   theta: 1,
@@ -51,7 +52,7 @@ window.onload = function init() {
   modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
   normalMatrixLoc = gl.getUniformLocation( program, "normalMatrix" );
   projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
-  lookatMatrixLoc = gl.getUniformLocation( program, "lookatMatrix" );
+  // lookatMatrixLoc = gl.getUniformLocation( program, "lookatMatrix" );
 
   initShapes();
   loadTexture("earth", EARTH_TEXTURE);
@@ -80,7 +81,9 @@ function render() {
   calculateEyePosition();
   lookatMatrix = lookAt(eye, at, up);
   gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
-  gl.uniformMatrix4fv(lookatMatrixLoc, false, flatten(lookatMatrix));
+  // gl.uniformMatrix4fv(lookatMatrixLoc, false, flatten(lookatMatrix));
+
+  gl.uniform3fv(gl.getUniformLocation(program, "vLightPosition"), flatten(lightPosition));
 
   if (autorotateY) {
     $("#rotateY").val(currentObject.rotateY);
@@ -99,6 +102,7 @@ function renderObject(object) {
   var modelViewMatrix = mult(getTranslationMatrix(object.x, object.y, object.z),
       mult(getRotationMatrix(object.rotateX, object.rotateY, object.rotateZ),
           getScaleMatrix(object.scale, object.scale, object.scale)));
+  modelViewMatrix = mult(lookAt(eye, at, up), modelViewMatrix);
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
   gl.uniformMatrix3fv(normalMatrixLoc, false, flatten(normalMatrix(modelViewMatrix, true)));
 
@@ -301,9 +305,20 @@ function initEventListeners() {
     autorotateY = this.checked;
   });
 
+  $("#lightX").on("input", function() { lightPosition[0] = parseFloat(this.value); });
+  $("#lightX").on("change", function() { lightPosition[0] = parseFloat(this.value); });
+  $("#lightY").on("input", function() { lightPosition[1] = parseFloat(this.value); });
+  $("#lightY").on("change", function() { lightPosition[1] = parseFloat(this.value); });
+  $("#lightZ").on("input", function() { lightPosition[2] = parseFloat(this.value); });
+  $("#lightZ").on("change", function() { lightPosition[2] = parseFloat(this.value); });
+
+  // Initialize values in UI.
   $("#rotateX").val(currentObject.rotateX);
   $("#rotateY").val(currentObject.rotateY);
   $("#rotateZ").val(currentObject.rotateZ);
+  $("#lightX").val(lightPosition[0]);
+  $("#lightY").val(lightPosition[1]);
+  $("#lightZ").val(lightPosition[2]);
   $("#numChecks").val(numChecks);
 }
 

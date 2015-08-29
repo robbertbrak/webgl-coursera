@@ -20,11 +20,13 @@ var modelViewMatrixLoc;
 var normalMatrixLoc;
 
 var shapes = {};
+var shapeNames = [];
 var camera = {};
 camera.radius = 6;
 camera.angle = 45;
 camera.animated = true;
 var eye = [4.158247202848457, 2.375470056608669, 3.6147091459975838];
+var at = [0, 0, 0];
 var up = [0, 1, 0];
 
 var lights = [];
@@ -90,9 +92,6 @@ function render() {
   gl.uniform1f(gl.getUniformLocation(program, "constantAttenuation"), constantAttenuation);
   gl.uniform1f(gl.getUniformLocation(program, "linearAttenuation"), linearAttenuation);
   gl.uniform1f(gl.getUniformLocation(program, "quadraticAttenuation"), quadraticAttenuation);
-  gl.uniform1f(gl.getUniformLocation(program, "ambientIntensity"), ambientIntensity);
-  gl.uniform1f(gl.getUniformLocation(program, "diffuseIntensity"), diffuseIntensity);
-  gl.uniform1f(gl.getUniformLocation(program, "specularIntensity"), specularIntensity);
 
   for (var i = 0; i < fixedObjects.length; i++) {
     renderObject(fixedObjects[i]);
@@ -109,18 +108,19 @@ function renderObject(object) {
   var modelViewMatrix = mult(getTranslationMatrix(object.x, object.y, object.z),
       mult(getRotationMatrix(object.rotateX, object.rotateY, object.rotateZ),
           getScaleMatrix(object.scaleX, object.scaleY, object.scaleZ)));
+  modelViewMatrix = mult(lookAt(eye, at, up), modelViewMatrix);
   gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
   gl.uniformMatrix3fv(normalMatrixLoc, false, flatten(normalMatrix(modelViewMatrix, true)));
 
-  var at = [0, 0, 0];
-  var projection = mult(perspective(45, canvas.clientWidth / canvas.clientHeight, 1, 20), lookAt(eye, at, up));
-  //var o = 1;
-  //var projection = ortho(-o, o, -o, o, -2, 2);
+  var projection = perspective(45, canvas.clientWidth / canvas.clientHeight, 1, 20);
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "projectionMatrix"), false, flatten(projection));
   gl.uniform1f(gl.getUniformLocation(program, "materialShininess"), object.materialShininess);
   gl.uniform4fv(gl.getUniformLocation(program, "ambientColor"), flatten(object.ambientColor));
   gl.uniform4fv(gl.getUniformLocation(program, "diffuseColor"), flatten(object.diffuseColor));
   gl.uniform4fv(gl.getUniformLocation(program, "specularColor"), flatten(object.specularColor));
+  gl.uniform1f(gl.getUniformLocation(program, "ambientIntensity"), ambientIntensity);
+  gl.uniform1f(gl.getUniformLocation(program, "diffuseIntensity"), object.diffuseIntensity);
+  gl.uniform1f(gl.getUniformLocation(program, "specularIntensity"), object.specularIntensity);
 
   var shape = object.shape;
 
@@ -160,11 +160,13 @@ function createAxis(a, b, color) {
     rotateX: 0, rotateY: 0, rotateZ: 0,
     scaleX: 1.0, scaleY: 1.0, scaleZ: 1.0,
     surfaceColor: color,
-    lineColor: color,
     ambientColor: ambientColor,
-    diffuseColor: diffuseColor,
+    diffuseColor: color,
     specularColor: specularColor,
-    materialShininess: 10
+    materialShininess: 10,
+    ambientIntensity: ambientIntensity,
+    diffuseIntensity: diffuseIntensity,
+    specularIntensity: specularIntensity
   };
 }
 
@@ -176,9 +178,12 @@ function createArrow(a, r, color) {
     scaleX: 0.06, scaleY: 0.06, scaleZ: 0.06,
     surfaceColor: color,
     ambientColor: ambientColor,
-    diffuseColor: diffuseColor,
+    diffuseColor: color,
     specularColor: specularColor,
-    materialShininess: 10
+    materialShininess: 10,
+    ambientIntensity: ambientIntensity,
+    diffuseIntensity: diffuseIntensity,
+    specularIntensity: specularIntensity
   };
 }
 
@@ -254,6 +259,7 @@ function initShapes() {
     "cone": cone,
     "cube": cube
   };
+  shapeNames = [ "sphere", "cylinder", "cone", "cube"];
 }
 
 function getRotationMatrix(x, y, z) {
@@ -358,10 +364,10 @@ function initEventListeners() {
   $("#quadraticAttenuation").on("change", function() { quadraticAttenuation = $(this).val(); });
   $("#ambientIntensity").on("input", function() { ambientIntensity = $(this).val(); });
   $("#ambientIntensity").on("change", function() { ambientIntensity = $(this).val(); });
-  $("#diffuseIntensity").on("input", function() { diffuseIntensity = $(this).val(); });
-  $("#diffuseIntensity").on("change", function() { diffuseIntensity = $(this).val(); });
-  $("#specularIntensity").on("input", function() { specularIntensity = $(this).val(); });
-  $("#specularIntensity").on("change", function() { specularIntensity = $(this).val(); });
+  $("#diffuseIntensity").on("input", function() { currentObject.diffuseIntensity = $(this).val(); });
+  $("#diffuseIntensity").on("change", function() { currentObject.diffuseIntensity = $(this).val(); });
+  $("#specularIntensity").on("input", function() { currentObject.specularIntensity = $(this).val(); });
+  $("#specularIntensity").on("change", function() { currentObject.specularIntensity = $(this).val(); });
 
   $("#currentLight").change(function() {
     currentLight = lights[$(this).val()];
@@ -454,12 +460,12 @@ function changeShape(shape) {
 }
 
 function addObject() {
-  var prev = currentObject;
   var nextScale = random(0.05, 0.6);
+  var shapeName = shapeNames[Math.floor(random(0, 4))];
 
   currentObject = {
-    shapeName: prev.shapeName,
-    shape: shapes[prev.shapeName],
+    shapeName: shapeName,
+    shape: shapes[shapeName],
     x: random(-1.8, 1.8),
     y: random(-1.8, 1.8),
     z: random(-1.8, 1.8),
@@ -471,11 +477,15 @@ function addObject() {
     scaleZ: nextScale,
     surfaceColor: vec4(random(0, 1), random(0, 1), random(0, 1), 1.0),
     ambientColor: ambientColor,
-    diffuseColor: diffuseColor,
+    diffuseColor: vec4(random(0, 1), random(0, 1), random(0, 1), 1.0),
     specularColor: specularColor,
-    materialShininess: random(0.5, 10)
+    materialShininess: random(1, 50),
+    ambientIntensity: random(0.05, 0.3),
+    diffuseIntensity: random(0.05, 0.8),
+    specularIntensity: random(0, 2)
   };
 
+  $("#shape").val(currentObject.shapeName);
   $("#translate-x").val(currentObject.x);
   $("#translate-y").val(currentObject.y);
   $("#translate-z").val(currentObject.z);
@@ -569,7 +579,7 @@ function objectName() {
 }
 
 function animateSelectedObject(object) {
-  var property = "surfaceColor";
+  var property = "diffuseColor";
   var originalColor = object[property];
   var white = vec4(1, 1, 1, 1);
   var counter = 0;
