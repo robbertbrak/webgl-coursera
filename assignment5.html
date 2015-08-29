@@ -9,22 +9,26 @@ attribute vec4 vPosition;
 attribute vec2 vTextureCoord;
 attribute vec3 vNormal;
 
+uniform vec3 vLightPosition;
 uniform mat4 modelViewMatrix;
-uniform mat4 lookatMatrix;
 uniform mat4 projectionMatrix;
 uniform mat3 normalMatrix;
 
 varying vec2 fTextureCoord;
-varying vec3 N;
-varying vec3 fPosition;
-varying vec3 eyeR;
+varying vec3 fNormal;
+varying vec3 fEyeVec;
+varying vec3 fLightDirection;
+varying vec4 fVertex;
 
 void main() {
-  gl_Position = projectionMatrix * lookatMatrix * modelViewMatrix * vPosition;
+  fVertex = modelViewMatrix * vPosition;
+  fNormal = normalMatrix * vNormal;
+
+  fLightDirection = fVertex.xyz - vLightPosition;
+  fEyeVec = - fVertex.xyz;
   fTextureCoord = vTextureCoord;
-  fPosition = vec3(projectionMatrix * lookatMatrix * modelViewMatrix * vPosition);
-  N = vNormal;
-  eyeR = reflect(normalize(fPosition).xyz, normalize(normalMatrix * N));
+
+  gl_Position = projectionMatrix * fVertex;
 }
 
   </script>
@@ -32,31 +36,19 @@ void main() {
   <script id="fragment-shader" type="x-shader/x-fragment">
 precision mediump float;
 
-uniform mat3 normalMatrix;
-uniform mat4 lookatMatrix;
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
-
 uniform sampler2D uSampler;
 uniform samplerCube uSamplerCube;
 uniform int useCube;
 
 varying vec2 fTextureCoord;
-varying vec3 fPosition;
-varying vec3 N;
-varying vec3 eyeR;
+varying vec3 fNormal;
+varying vec3 fEyeVec;
+varying vec3 fLightDirection;
+varying vec4 fVertex;
 
 void main() {
-  vec3 pointLightPosition = vec3(-3.0, 3.0, 6.0);
-  vec3 pointLightDirection = vec3(pointLightPosition.xyz - fPosition.xyz);
-  float d = length(pointLightDirection);
+  float d = length(fLightDirection);
   float attenuation = 1.0 / (0.01 + 0.01 * d + 0.03 * d * d);
-
-  vec3 n = normalize(normalMatrix * N);
-  vec3 l = normalize(vec4(pointLightDirection, 1.0)).xyz;
-  vec3 v = - normalize(vec4(fPosition, 1.0)).xyz;
-  vec3 R = reflect(l, n);
-  float specular = pow(max(dot(R, v), 0.0), 10.0);
 
   vec3 ambientColor = vec3(0.6, 0.6, 0.6) * attenuation;
   vec3 diffuseColor = vec3(1.0, 1.0, 1.0) * attenuation;
@@ -66,14 +58,30 @@ void main() {
   float specularIntensity = 0.8;
   float diffuseIntensity = 0.9;
 
-  float diffuseLambert = max(dot(l, n), 0.0);
+  vec4 ambientTerm = vec4(ambientColor * ambientIntensity, 1.0);
+  vec4 diffuseTerm = vec4(0.0, 0.0, 0.0, 1.0);
+  vec4 specularTerm = vec4(0.0, 0.0, 0.0, 1.0);
 
-  vec4 lightColor = vec4(ambientColor * ambientIntensity + diffuseLambert * diffuseColor * diffuseIntensity
-    + specularColor * specular * specularIntensity, 1.0);
+  vec3 L = normalize(fLightDirection);
+  vec3 N = normalize(fNormal);
+
+  float lambertTerm = dot(N, -L);
+
+  if (lambertTerm > 0.0) {
+    diffuseTerm = vec4(lambertTerm * diffuseColor * diffuseIntensity, 1.0);
+
+    vec3 E = normalize(fEyeVec);
+    vec3 R = reflect(L, N);
+    float specular = pow( max(dot(R, E), 0.0), 10.0);
+
+    specularTerm = vec4(specularColor * specular * specularIntensity, 1.0);
+  }
+
+  vec4 lightColor = ambientTerm + diffuseTerm + specularTerm;
 
   vec4 textureColor;
   if (useCube == 1) {
-    textureColor = textureCube(uSamplerCube, R);
+    textureColor = textureCube(uSamplerCube, reflect(normalize(fVertex.xyz), N));
   } else {
     textureColor = texture2D(uSampler, vec2(fTextureCoord.st));
   }
@@ -160,6 +168,29 @@ void main() {
     <div class="form-element">
       <label for="rotateZ">Rotate z</label>
       <input type="range" class="slider" id="rotateZ" min="0" max="360" step="1" value="0">
+    </div>
+  </div>
+
+  <div class="form-group">
+
+    <h3>Light position</h3>
+    <!--
+    <div class="form-element">
+      <label for="autorotateY">Animate y-axis</label>
+      <input type="checkbox" id="autorotateY" checked>
+    </div>
+    -->
+    <div class="form-element">
+      <label for="lightX">Light x</label>
+      <input type="range" class="slider" id="lightX" min="-10" max="10" step="0.1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="lightY">Light y</label>
+      <input type="range" class="slider" id="lightY" min="-10" max="10" step="0.1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="lightZ">Light z</label>
+      <input type="range" class="slider" id="lightZ" min="-10" max="10" step="0.1" value="0">
     </div>
   </div>
 
