@@ -83,7 +83,7 @@ function render() {
   gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
   // gl.uniformMatrix4fv(lookatMatrixLoc, false, flatten(lookatMatrix));
 
-  gl.uniform3fv(gl.getUniformLocation(program, "vLightPosition"), flatten(lightPosition));
+  gl.uniform3fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
 
   if (autorotateY) {
     $("#rotateY").val(currentObject.rotateY);
