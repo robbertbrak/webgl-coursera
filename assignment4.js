@@ -478,7 +478,7 @@ function addObject() {
     surfaceColor: vec4(random(0, 1), random(0, 1), random(0, 1), 1.0),
     ambientColor: ambientColor,
     diffuseColor: vec4(random(0, 1), random(0, 1), random(0, 1), 1.0),
-    specularColor: specularColor,
+    specularColor: vec4(random(0, 1), random(0, 1), random(0, 1), 1.0),
     materialShininess: random(1, 50),
     ambientIntensity: random(0.05, 0.3),
     diffuseIntensity: random(0.05, 0.8),

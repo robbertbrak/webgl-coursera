@@ -11,6 +11,7 @@ var objects = [];
 var textures = [];
 var textureImages = [];
 var textureTypes = [];
+var moon = {};
 
 var USE_CUBE_MAP = 1;
 var USE_TEXTURE_2D = 0;
@@ -27,32 +28,33 @@ var CUBE_MAP = 2;
 
 var textureMappings = [REGULAR_MAPPING, TYPE1_MAPPING, TYPE2_MAPPING, TYPE3_MAPPING];
 
-var modelViewMatrixLoc;
+var modelMatrixLoc;
+var viewMatrixLoc;
 var projectionMatrixLoc;
 var normalMatrixLoc;
-var lookatMatrixLoc;
-var lightPosition = [ -2.0, 2.0, 3.0 ];
+var lightPosition = [ -2.0, 2.0, 5.0 ];
 
 var camera = {
+  animated: true,
   theta: 1,
   phi: 10,
-  radius: 4
+  radius: 5
 };
 
 var eye = [0, 0, 2];
 var at = [0, 0, 0];
 var up = [0, 1, 0];
-var lookatMatrix;
+var viewMatrix;
 
 var shapes = {};
 
 window.onload = function init() {
   initGlProgram();
 
-  modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
+  modelMatrixLoc = gl.getUniformLocation( program, "modelMatrix" );
+  viewMatrixLoc = gl.getUniformLocation( program, "viewMatrix" );
   normalMatrixLoc = gl.getUniformLocation( program, "normalMatrix" );
   projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
-  // lookatMatrixLoc = gl.getUniformLocation( program, "lookatMatrix" );
 
   initShapes();
   loadTexture("earth", EARTH_TEXTURE);
@@ -64,8 +66,18 @@ window.onload = function init() {
     texture: EARTH_TEXTURE,
     scale: 0.7,
     x: 0, y: 0, z: 0,
-    rotateX: 155, rotateY: 270, rotateZ: 0
+    rotateX: 155, rotateY: 270, rotateZ: 0,
+    visible: true
   });
+  moon = {
+    shape: shapes.sphere[REGULAR_MAPPING],
+    texture: CHECKERBOARD_TEXTURE,
+    scale: 0.2,
+    x: 1.2, y: 0, z: 0,
+    rotateX: 155, rotateY: 270, rotateZ: 0,
+    visible: true
+  };
+  objects.push(moon);
   currentObject = objects[0];
 
   initEventListeners();
@@ -77,18 +89,14 @@ function render() {
 
   var projectionMatrix = perspective(30, 1, 1, 20);
 
-  // camera.phi = (camera.phi + 1) % 360;
+  moveCamera();
+  moveObjects();
+
   calculateEyePosition();
-  lookatMatrix = lookAt(eye, at, up);
+  viewMatrix = lookAt(eye, at, up);
   gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
-  // gl.uniformMatrix4fv(lookatMatrixLoc, false, flatten(lookatMatrix));
-
-  gl.uniform3fv(gl.getUniformLocation(program, "vLightPosition"), flatten(lightPosition));
-
-  if (autorotateY) {
-    $("#rotateY").val(currentObject.rotateY);
-    changeRotation((parseFloat(currentObject.rotateY) + 1) % 360, "Y");
-  }
+  gl.uniformMatrix4fv(viewMatrixLoc, false, flatten(viewMatrix));
+  gl.uniform3fv(gl.getUniformLocation(program, "lightPosition"), flatten(lightPosition));
 
   for (var i = 0; i < objects.length; i++) {
     renderObject(objects[i]);
@@ -98,12 +106,14 @@ function render() {
 }
 
 function renderObject(object) {
+  if (!object.visible) {
+    return;
+  }
   // Set transformation matrix for current object
   var modelViewMatrix = mult(getTranslationMatrix(object.x, object.y, object.z),
       mult(getRotationMatrix(object.rotateX, object.rotateY, object.rotateZ),
           getScaleMatrix(object.scale, object.scale, object.scale)));
-  modelViewMatrix = mult(lookAt(eye, at, up), modelViewMatrix);
-  gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+  gl.uniformMatrix4fv(modelMatrixLoc, false, flatten(modelViewMatrix));
   gl.uniformMatrix3fv(normalMatrixLoc, false, flatten(normalMatrix(modelViewMatrix, true)));
 
   var shape = object.shape;
@@ -149,6 +159,13 @@ function initShapes() {
 
 }
 
+function moveCamera() {
+  if (camera.animated) {
+    camera.phi = (camera.phi + 360 - 1.0) % 360;
+    $("#cameraPhi").val(camera.phi);
+  }
+}
+
 function calculateEyePosition() {
   var cosTheta = Math.cos(radians(camera.theta));
   var sinTheta = Math.sin(radians(camera.theta));
@@ -158,6 +175,15 @@ function calculateEyePosition() {
   eye[0] = radius * cosTheta * sinPhi;
   eye[1] = radius * sinTheta * sinPhi;
   eye[2] = radius * cosPhi;
+}
+
+function moveObjects() {
+  if (autorotateY) {
+    currentObject.rotateY = (parseFloat(currentObject.rotateY) + 1) % 360;
+    $("#rotateY").val(currentObject.rotateY);
+    moon.rotateY = (parseFloat(objects[1].rotateY) + 360 - 3) % 360;
+  }
+
 }
 
 function getRotationMatrix(x, y, z) {
@@ -291,15 +317,19 @@ function initEventListeners() {
     }
   });
   $("#textureMapping").change(function() { currentObject.shape = shapes.sphere[$(this).val()]; });
-  $("#rotateX").on("input", function() { changeRotation($(this).val(), "X") });
-  $("#rotateY").on("input", function() { changeRotation($(this).val(), "Y") });
-  $("#rotateZ").on("input", function() { changeRotation($(this).val(), "Z") });
-  $("#rotateX").on("change", function() { changeRotation($(this).val(), "X") });
-  $("#rotateY").on("change", function() { changeRotation($(this).val(), "Y") });
-  $("#rotateZ").on("change", function() { changeRotation($(this).val(), "Z") });
+  $("#rotateX").on("input", function() { currentObject.rotateX = parseFloat(this.value) });
+  $("#rotateX").on("change", function() { currentObject.rotateX = parseFloat(this.value) });
+  $("#rotateY").on("input", function() { currentObject.rotateY = parseFloat(this.value) });
+  $("#rotateY").on("change", function() { currentObject.rotateY = parseFloat(this.value) });
+  $("#rotateZ").on("input", function() { currentObject.rotateZ = parseFloat(this.value) });
+  $("#rotateZ").on("change", function() { currentObject.rotateZ = parseFloat(this.value) });
   $("#numChecks").on("input", function() { numChecks = parseInt($(this).val()); createCheckerboard() });
   $("#numChecks").on("change", function() { numChecks = parseInt($(this).val()); createCheckerboard() });
   addColorPicker("checkColor", "checkColor");
+
+  $("#moonVisible").click(function() {
+    moon.visible = this.checked;
+  });
 
   $("#autorotateY").click(function() {
     autorotateY = this.checked;
@@ -312,18 +342,29 @@ function initEventListeners() {
   $("#lightZ").on("input", function() { lightPosition[2] = parseFloat(this.value); });
   $("#lightZ").on("change", function() { lightPosition[2] = parseFloat(this.value); });
 
+  $("#cameraAnimated").click(function() {
+    camera.animated = this.checked;
+  });
+
+  $("#cameraPhi").on("input", function() { camera.phi = parseFloat(this.value); });
+  $("#cameraPhi").on("change", function() { camera.phi = parseFloat(this.value); });
+  $("#cameraTheta").on("input", function() { camera.theta = parseFloat(this.value); });
+  $("#cameraTheta").on("change", function() { camera.theta = parseFloat(this.value); });
+  $("#cameraRadius").on("input", function() { camera.radius = parseFloat(this.value); });
+  $("#cameraRadius").on("change", function() { camera.radius = parseFloat(this.value); });
+
   // Initialize values in UI.
+  $("#numChecks").val(numChecks);
   $("#rotateX").val(currentObject.rotateX);
   $("#rotateY").val(currentObject.rotateY);
   $("#rotateZ").val(currentObject.rotateZ);
   $("#lightX").val(lightPosition[0]);
   $("#lightY").val(lightPosition[1]);
   $("#lightZ").val(lightPosition[2]);
-  $("#numChecks").val(numChecks);
-}
-
-function changeRotation(val, axis) {
-  currentObject["rotate" + axis] = val;
+  $("#cameraAnimated").prop("checked", camera.animated);
+  $("#cameraPhi").val(camera.phi);
+  $("#cameraTheta").val(camera.theta);
+  $("#cameraRadius").val(camera.radius);
 }
 
 function addColorPicker(elementId, objectProperty) {

@@ -9,26 +9,23 @@ attribute vec4 vPosition;
 attribute vec2 vTextureCoord;
 attribute vec3 vNormal;
 
-uniform vec3 vLightPosition;
-uniform mat4 modelViewMatrix;
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
-uniform mat3 normalMatrix;
 
 varying vec2 fTextureCoord;
 varying vec3 fNormal;
-varying vec3 fEyeVec;
-varying vec3 fLightDirection;
-varying vec4 fVertex;
+varying vec3 fVertex;
 
 void main() {
-  fVertex = modelViewMatrix * vPosition;
-  fNormal = normalMatrix * vNormal;
+  vec4 vertex = modelMatrix * vPosition;
 
-  fLightDirection = fVertex.xyz - vLightPosition;
-  fEyeVec = - fVertex.xyz;
+  fNormal = vNormal;
+  fVertex = vertex.xyz;
+
   fTextureCoord = vTextureCoord;
 
-  gl_Position = projectionMatrix * fVertex;
+  gl_Position = projectionMatrix * viewMatrix * vertex;
 }
 
   </script>
@@ -39,42 +36,45 @@ precision mediump float;
 uniform sampler2D uSampler;
 uniform samplerCube uSamplerCube;
 uniform int useCube;
+uniform vec3 lightPosition;
+uniform mat3 normalMatrix;
 
 varying vec2 fTextureCoord;
 varying vec3 fNormal;
-varying vec3 fEyeVec;
-varying vec3 fLightDirection;
-varying vec4 fVertex;
+varying vec3 fVertex;
+
 
 void main() {
+  vec3 fLightDirection = fVertex.xyz - lightPosition.xyz;
   float d = length(fLightDirection);
   float attenuation = 1.0 / (0.01 + 0.01 * d + 0.03 * d * d);
 
-  vec3 ambientColor = vec3(0.6, 0.6, 0.6) * attenuation;
-  vec3 diffuseColor = vec3(1.0, 1.0, 1.0) * attenuation;
-  vec3 specularColor = vec3(1.0, 1.0, 1.0) * attenuation;
+  vec4 ambientColor = vec4(0.8, 0.8, 0.8, 1.0); // No distance attenuation.
+  vec4 diffuseColor = vec4(1.0, 1.0, 1.0, 1.0) * attenuation;
+  vec4 specularColor = vec4(1.0, 1.0, 1.0, 1.0) * attenuation;
 
-  float ambientIntensity = 0.4;
+  float ambientIntensity = 0.7;
   float specularIntensity = 0.8;
   float diffuseIntensity = 0.9;
+  float materialShininess = 30.0;
 
-  vec4 ambientTerm = vec4(ambientColor * ambientIntensity, 1.0);
+  vec4 ambientTerm = vec4(ambientColor * ambientIntensity);
   vec4 diffuseTerm = vec4(0.0, 0.0, 0.0, 1.0);
   vec4 specularTerm = vec4(0.0, 0.0, 0.0, 1.0);
 
   vec3 L = normalize(fLightDirection);
-  vec3 N = normalize(fNormal);
+  vec3 N = normalize(normalMatrix * fNormal);
 
   float lambertTerm = dot(N, -L);
 
   if (lambertTerm > 0.0) {
-    diffuseTerm = vec4(lambertTerm * diffuseColor * diffuseIntensity, 1.0);
-
-    vec3 E = normalize(fEyeVec);
-    vec3 R = reflect(L, N);
-    float specular = pow( max(dot(R, E), 0.0), 10.0);
-
-    specularTerm = vec4(specularColor * specular * specularIntensity, 1.0);
+    diffuseTerm = lambertTerm * diffuseColor * attenuation * diffuseIntensity;
+    if (lambertTerm > 0.0) {
+      vec3 E = normalize(- fVertex);
+      vec3 R = reflect(L, N);
+      float specular = pow(max(dot(R, E), 0.0), materialShininess);
+      specularTerm = specularColor * attenuation * specular * specularIntensity;
+    }
   }
 
   vec4 lightColor = ambientTerm + diffuseTerm + specularTerm;
@@ -150,6 +150,11 @@ void main() {
     <input type="text" id="checkColor">
   </div>
 
+  <div class="form-element">
+    <label for="moonVisible">Show moon</label>
+    <input type="checkbox" id="moonVisible" checked>
+  </div>
+
   <div class="form-group">
 
     <h3>Rotation</h3>
@@ -191,6 +196,27 @@ void main() {
     <div class="form-element">
       <label for="lightZ">Light z</label>
       <input type="range" class="slider" id="lightZ" min="-10" max="10" step="0.1" value="0">
+    </div>
+  </div>
+
+  <div class="form-group">
+
+    <h3>Camera position</h3>
+    <div class="form-element">
+      <label for="cameraAnimated">Animate</label>
+      <input type="checkbox" id="cameraAnimated" checked>
+    </div>
+    <div class="form-element">
+      <label for="cameraPhi">Phi</label>
+      <input type="range" class="slider" id="cameraPhi" min="0" max="360" step="0.1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="cameraTheta">Theta</label>
+      <input type="range" class="slider" id="cameraTheta" min="0" max="360" step="0.1" value="0">
+    </div>
+    <div class="form-element">
+      <label for="cameraRadius">Radius</label>
+      <input type="range" class="slider" id="cameraRadius" min="2" max="10" step="0.1" value="0">
     </div>
   </div>
 
