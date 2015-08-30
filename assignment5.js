@@ -11,6 +11,7 @@ var objects = [];
 var textures = [];
 var textureImages = [];
 var textureTypes = [];
+var moon = {};
 
 var USE_CUBE_MAP = 1;
 var USE_TEXTURE_2D = 0;
@@ -37,7 +38,7 @@ var camera = {
   animated: true,
   theta: 1,
   phi: 10,
-  radius: 4
+  radius: 5
 };
 
 var eye = [0, 0, 2];
@@ -65,15 +66,18 @@ window.onload = function init() {
     texture: EARTH_TEXTURE,
     scale: 0.7,
     x: 0, y: 0, z: 0,
-    rotateX: 155, rotateY: 270, rotateZ: 0
+    rotateX: 155, rotateY: 270, rotateZ: 0,
+    visible: true
   });
-  objects.push({
+  moon = {
     shape: shapes.sphere[REGULAR_MAPPING],
     texture: CHECKERBOARD_TEXTURE,
     scale: 0.2,
     x: 1.2, y: 0, z: 0,
-    rotateX: 155, rotateY: 270, rotateZ: 0
-  });
+    rotateX: 155, rotateY: 270, rotateZ: 0,
+    visible: true
+  };
+  objects.push(moon);
   currentObject = objects[0];
 
   initEventListeners();
@@ -102,6 +106,9 @@ function render() {
 }
 
 function renderObject(object) {
+  if (!object.visible) {
+    return;
+  }
   // Set transformation matrix for current object
   var modelViewMatrix = mult(getTranslationMatrix(object.x, object.y, object.z),
       mult(getRotationMatrix(object.rotateX, object.rotateY, object.rotateZ),
@@ -174,7 +181,7 @@ function moveObjects() {
   if (autorotateY) {
     currentObject.rotateY = (parseFloat(currentObject.rotateY) + 1) % 360;
     $("#rotateY").val(currentObject.rotateY);
-    objects[1].rotateY = (parseFloat(objects[1].rotateY) + 360 - 3) % 360;
+    moon.rotateY = (parseFloat(objects[1].rotateY) + 360 - 3) % 360;
   }
 
 }
@@ -319,6 +326,10 @@ function initEventListeners() {
   $("#numChecks").on("input", function() { numChecks = parseInt($(this).val()); createCheckerboard() });
   $("#numChecks").on("change", function() { numChecks = parseInt($(this).val()); createCheckerboard() });
   addColorPicker("checkColor", "checkColor");
+
+  $("#moonVisible").click(function() {
+    moon.visible = this.checked;
+  });
 
   $("#autorotateY").click(function() {
     autorotateY = this.checked;
