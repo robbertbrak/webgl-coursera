@@ -375,7 +375,6 @@ function addColorPicker(elementId, objectProperty) {
     change: function(color) {
       var rgb = color.toRgb();
       checkColor = vec3(rgb.r, rgb.g, rgb.b);
-      console.log(numChecks, checkColor);
       createCheckerboard();
     }
   });
